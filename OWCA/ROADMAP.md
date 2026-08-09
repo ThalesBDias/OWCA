@@ -16,8 +16,8 @@ Attacks, damage rolls, tests, current-magazine tracking, temporary Wounds, condi
 | v0.4.0 | Released | Creation rolls, starting XP, and printable dossiers | Complete creation inputs, spend the initial allowance, and export an A4 record |
 | v0.5.0 | Implemented | Complete Core Talent browser | Search, filter, price, validate, and purchase the complete Core Talent catalogue |
 | v0.5.1 | Released | JSON interoperability and file safety | Exchange versioned data safely, migrate older files, and recover interrupted saves |
-| v0.6.0 | Current development | Weapon and equipment catalogue | Browse complete supported equipment definitions and weapon statistics |
-| v0.7.0 | Planned | Character inventory and loadouts | Maintain owned gear, armour locations, loadout completeness, and carried weight |
+| v0.6.0 | Implemented | Weapon and equipment catalogue | Browse complete supported equipment definitions and weapon statistics |
+| v0.7.0 | Current development | Character inventory and loadouts | Maintain owned gear, armour locations, loadout completeness, and carried weight |
 | v0.8.0 | Planned | Weapon modifications | Upgrade individual weapons and calculate compatible modified statistics |
 | v0.9.0 | Planned | Campaign advancement | Award XP, manage lasting character changes, and advance Guardsmen and Comrades |
 | v0.10.0 | Planned | Player journal and editable dossier | Maintain notes and logs, then choose how they appear in normal or ink-saving exports |
@@ -50,7 +50,7 @@ Combat engines may consume these files, but combat rules and session state do no
 
 Save As is not the same operation as Duplicate. Save As preserves the record's document ID at a different path; Duplicate generates a new document ID so external tools do not mistake two independent characters for one record. A lifecycle transition is explicit and validated rather than inferred merely because every current field happens to be filled.
 
-## v0.6.0 - Weapon and equipment catalogue (current development)
+## v0.6.0 - Weapon and equipment catalogue (implemented)
 
 Goal: establish one trustworthy, searchable source of supported Core weapon, ammunition, armour, gear, and upgrade definitions.
 
@@ -68,7 +68,7 @@ Planned scope:
 
 Catalogue definitions are immutable rules data. They are not the individual objects a character owns, and magazine capacity does not imply shot-by-shot ammunition tracking.
 
-## v0.7.0 - Character inventory and loadouts
+## v0.7.0 - Character inventory and loadouts (current development)
 
 Goal: let a completed character maintain personal equipment without changing the shared catalogue definition.
 

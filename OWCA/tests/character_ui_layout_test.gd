@@ -23,6 +23,7 @@ func _run() -> void:
 		creator.call("_render_active_stage")
 		await process_frame
 		_assert_advancement_buttons_fit(creator, test_size)
+		_assert_loadout_stage_navigation_fits(creator, test_size)
 
 	creator.call("_select_stage", "characteristics")
 	await process_frame
@@ -78,6 +79,14 @@ func _assert_roll_buttons_fit(creator: Control, test_size: Vector2i) -> void:
 		var button_rect := button.get_global_rect()
 		_assert_true(button_rect.position.x >= content_rect.position.x - 1.0, "roll button begins inside content panel at %s" % test_size)
 		_assert_true(button_rect.end.x <= content_rect.end.x + 1.0, "roll button ends inside content panel at %s" % test_size)
+
+
+func _assert_loadout_stage_navigation_fits(creator: Control, test_size: Vector2i) -> void:
+	var stage_buttons := creator.get("stage_buttons") as Dictionary
+	var loadout_button := stage_buttons.get("loadout") as Button
+	var status_label := creator.get("status_label") as Label
+	_assert_true(loadout_button != null, "Loadout stage navigation exists at %s" % test_size)
+	_assert_true(status_label != null and loadout_button.get_global_rect().end.y < status_label.get_global_rect().position.y, "Loadout stage remains above the bottom status panel at %s" % test_size)
 
 
 func _collect_roll_buttons(node: Node, output: Array[Button]) -> void:

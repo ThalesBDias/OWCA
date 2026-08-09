@@ -58,6 +58,8 @@ func _init() -> void:
 	_assert_true(_entry_exists(result["talents"], "technical_knock"), "Operator fixed Talent")
 	_assert_true(_entry_exists(result["talents"], "weapon_training_las"), "Operator chosen Weapon Training")
 	_assert_true(_entry_exists(result["equipment"], "auspex_scanner"), "Operator equipment")
+	_assert_true("speciality_issue" in (_entry(result["equipment"], "auspex_scanner").get("origins", []) as Array), "Speciality equipment retains its issue origin")
+	_assert_true("standard_issue" in (_entry(result["equipment"], "lascarbine").get("origins", []) as Array), "regimental equipment retains its issue origin")
 
 	var incomplete := CharacterState.new()
 	incomplete.set_regiment(regiment_state.to_dict(), str(regiment_repository.data.get("content_version", "")))
@@ -87,6 +89,8 @@ func _init() -> void:
 	_assert_true(weapon_result["valid"], "Weapon Specialist three-selection choice resolves")
 	_assert_equal(weapon_result["characteristics"]["Ballistic Skill"], 35, "Weapon Specialist characteristic choice")
 	_assert_equal(_equipment_quantity(weapon_result["equipment"], "frag_grenade"), 6, "Speciality grenades merge with regiment kit")
+	_assert_equal((_entry(weapon_result["equipment"], "frag_grenade").get("origin_quantities", {}) as Dictionary).get("standard_issue"), 2, "merged grenades retain their standard-issue quantity")
+	_assert_equal((_entry(weapon_result["equipment"], "frag_grenade").get("origin_quantities", {}) as Dictionary).get("speciality_issue"), 4, "merged grenades retain their Speciality-issue quantity")
 
 	# A duplicate Aptitude generates a required replacement choice.
 	var aptitude_regiment := RegimentState.new()
@@ -245,6 +249,13 @@ func _equipment_quantity(entries: Array, entry_id: String) -> int:
 		if str(entry.get("id", "")) == entry_id:
 			return int(entry.get("quantity", 0))
 	return 0
+
+
+func _entry(entries: Array, entry_id: String) -> Dictionary:
+	for entry: Dictionary in entries:
+		if str(entry.get("id", "")) == entry_id:
+			return entry
+	return {}
 
 
 func _unresolved_prompt_contains(entries: Array, text: String) -> bool:

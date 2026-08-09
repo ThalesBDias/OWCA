@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="Only War Character Assistant"
-config/version="0.6.0-dev"
+config/version="0.7.0-dev"
 run/main_scene="res://OWCA/ui/LandingPage.tscn"
 config/features=PackedStringArray("4.7")
 config/icon="res://icon.png"

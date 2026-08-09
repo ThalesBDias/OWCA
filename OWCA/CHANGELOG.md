@@ -8,6 +8,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+- Added a shared Character Inventory editor to Create Character and a new standalone Manage Loadout landing workflow.
+- Added durable owned-item instances with safe stack splitting, quantity, craftsmanship, origin, equipped/carried/stored location, character/Comrade/squad custody, and short notes.
+- Added idempotent starting-loadout materialization, changed-creation grant rebuilding, durable issued-item reconciliation, explicit loadout finalization, minimal structured Comrade identity, and append-only inventory audit events.
+- Added searchable supported-equipment selection, carried ammunition quantities in catalogue units, armour AP by body location, and Core carrying-capacity calculations.
+- Added partial-weight reporting for equipment whose source provides no weight, rather than displaying a false exact total.
+- Added character inventory service, calculator, UI, migration, interoperability, responsive-layout, and printable-loadout regression tests.
+- Added provenance-aware starting-grant signatures and protected grant-owned stacks so later equipment survives creation-input rebuilds.
+- Added strict v4 integer, craftsmanship, timestamp, snapshot, lifecycle, and quantity-one weapon/armour validation at load and save boundaries.
+- Added idempotent no-op inventory edits, named Comrade dossier output, and automatic loadout-continuation pages for large inventories.
+
 - Added a single versioned Core equipment catalogue with 115 immutable weapon, ammunition, armour, wargear, upgrade, and explicit placeholder definitions.
 - Added complete weapon-profile fields for the currently supported catalogue slice: class, range, rate of fire, Damage, Penetration, magazine capacity, Reload, weight, Availability, qualities, and ammunition links where applicable.
 - Added a read-only Armoury browser with text search, category and Availability filters, live profile details, stable IDs, and printed source-page references.
@@ -31,6 +41,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Added regression coverage for complete Talent data, new prerequisite forms, browser search, browser filters, and unsupported specialist choices.
 
 ### Changed
+
+- Character saves now use envelope/state version 4 and public interoperability schema `1.3.0`, with v1-v3 migration to an unprepared draft loadout.
+- The landing page now uses a responsive four-workflow layout and the application version is `0.7.0-dev`.
+- Character dossiers now print the owned loadout, custody/location context, known carried weight, and armour by location instead of only the calculated starting-equipment preview.
 
 - Regiment and character starting packages now resolve equipment through the same shared catalogue instead of maintaining duplicate local definition maps.
 - The landing page now includes a responsive third Armoury workflow and the displayed application version is `0.6.0-dev`.

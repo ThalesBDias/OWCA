@@ -1,9 +1,9 @@
 class_name CharacterSheetExporter
 extends RefCounted
 
-## Renders the two-page OWCA sheet at 300 DPI and exports PDF plus PNG pages.
-
-const PAGE_COUNT := 2
+## Renders the OWCA sheet at 300 DPI and exports PDF plus PNG pages. Most
+## characters use two pages; unusually large owned inventories gain loadout
+## continuation pages instead of being silently truncated.
 
 
 func export_pdf_and_png(path: String, state: CharacterState, calculation: Dictionary, host: Node) -> Dictionary:
@@ -16,8 +16,11 @@ func export_pdf_and_png(path: String, state: CharacterState, calculation: Dictio
 	var base_path := pdf_path.left(pdf_path.length() - 4)
 	var images: Array[Image] = []
 	var png_paths: Array[String] = []
-	for page in range(1, PAGE_COUNT + 1):
-		var image := await _render_page(state, calculation, page, host)
+	var layout_helper := PrintableCharacterSheet.new()
+	var page_count := layout_helper.get_required_page_count(calculation, str(state.comrade.get("name", "")))
+	layout_helper.free()
+	for page in range(1, page_count + 1):
+		var image := await _render_page(state, calculation, page, page_count, host)
 		if image == null or image.is_empty():
 			return { "error": ERR_CANT_CREATE, "message": "Could not render character-sheet page %d." % page }
 		images.append(image)
@@ -31,11 +34,11 @@ func export_pdf_and_png(path: String, state: CharacterState, calculation: Dictio
 	if int(pdf_result.get("error", ERR_CANT_CREATE)) != OK:
 		return pdf_result
 	pdf_result["png_paths"] = png_paths
-	pdf_result["message"] = "Exported 2-page A4 PDF and PNG sheets to %s." % pdf_path.get_base_dir()
+	pdf_result["message"] = "Exported %d-page A4 PDF and PNG sheets to %s." % [page_count, pdf_path.get_base_dir()]
 	return pdf_result
 
 
-func _render_page(state: CharacterState, calculation: Dictionary, page: int, host: Node) -> Image:
+func _render_page(state: CharacterState, calculation: Dictionary, page: int, page_count: int, host: Node) -> Image:
 	var viewport := SubViewport.new()
 	viewport.name = "CharacterSheetRenderPage%d" % page
 	viewport.size = PrintableCharacterSheet.PAGE_SIZE
@@ -47,7 +50,7 @@ func _render_page(state: CharacterState, calculation: Dictionary, page: int, hos
 
 	var sheet := PrintableCharacterSheet.new()
 	viewport.add_child(sheet)
-	sheet.configure(state, calculation, page, PAGE_COUNT)
+	sheet.configure(state, calculation, page, page_count)
 	await RenderingServer.frame_post_draw
 	var image := viewport.get_texture().get_image()
 	viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
