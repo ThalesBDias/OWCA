@@ -17,7 +17,8 @@ Attacks, damage rolls, tests, current-magazine tracking, temporary Wounds, condi
 | v0.5.0 | Implemented | Complete Core Talent browser | Search, filter, price, validate, and purchase the complete Core Talent catalogue |
 | v0.5.1 | Released | JSON interoperability and file safety | Exchange versioned data safely, migrate older files, and recover interrupted saves |
 | v0.6.0 | Implemented | Weapon and equipment catalogue | Browse complete supported equipment definitions and weapon statistics |
-| v0.7.0 | Current development | Character inventory and loadouts | Maintain owned gear, armour locations, loadout completeness, and carried weight |
+| v0.7.0 | Implemented development baseline | Character inventory and loadouts | Maintain owned gear, armour locations, loadout completeness, and carried weight |
+| v0.7.1 | Current development | Player-facing loadout refinement | Prepare starting gear, add optional equipment, and finalize through a clear creation workflow |
 | v0.8.0 | Planned | Weapon modifications | Upgrade individual weapons and calculate compatible modified statistics |
 | v0.9.0 | Planned | Campaign advancement | Award XP, manage lasting character changes, and advance Guardsmen and Comrades |
 | v0.10.0 | Planned | Player journal and editable dossier | Maintain notes and logs, then choose how they appear in normal or ink-saving exports |
@@ -68,7 +69,7 @@ Planned scope:
 
 Catalogue definitions are immutable rules data. They are not the individual objects a character owns, and magazine capacity does not imply shot-by-shot ammunition tracking.
 
-## v0.7.0 - Character inventory and loadouts (current development)
+## v0.7.0 - Character inventory and loadouts (implemented development baseline)
 
 Goal: let a completed character maintain personal equipment without changing the shared catalogue definition.
 
@@ -92,6 +93,29 @@ Planned scope:
 Equipment acquisition and XP advancement remain separate systems. OWCA records what changed without assuming every item was bought with XP.
 
 Inventory history is an audit record, not a simulation of every moment at the table. Corrections remain possible, but they should be represented clearly enough that a player can understand why the current loadout differs from the original issue.
+
+The v0.7.0 implementation is the internal functional baseline for PR #13 and is not intended to be deployed separately. The first deployable v0.7 candidate is v0.7.1 after its character-creation presentation is ready for players.
+
+## v0.7.1 - Player-facing loadout refinement (current development)
+
+Goal: make the Create Character loadout stage clear to a player without removing the detailed inventory controls needed for maintenance and troubleshooting.
+
+Planned scope:
+
+- present Starting Equipment, Add Optional Equipment, and Review and Finalize as the only primary creation sections;
+- hide custody, provenance, reconciliation enums, audit history, durable IDs, and technical lifecycle terminology from the normal creation path;
+- materialize and reconcile intact calculated grants automatically;
+- replace technical reconciliation failures with a plain-language restore action;
+- default newly added optional equipment to the character, Common craftsmanship, and carried location;
+- group the visible loadout into Weapons, Armour, Ammunition, and Gear;
+- keep concise item profiles, armour by location, and carried-weight information visible;
+- count valid catalogue definitions without a printed weight as `0 kg` rather than producing a partial-total warning;
+- retain unresolved-definition blocking when the catalogue definition itself is missing;
+- provide one clear **Finalize Loadout and Continue to Review** action with a nearby explanation when unavailable;
+- preserve the full technical workflow in Manage Loadout; and
+- verify both presentation modes at the 960x650 minimum window.
+
+This refinement changes presentation and the missing-weight calculation rule. It does not change the v4 inventory save model, audit semantics, ownership model, or interoperability schema.
 
 ## v0.8.0 - Weapon modifications
 

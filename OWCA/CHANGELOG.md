@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Planned for v0.7.1
+
+- Replace the technical inventory form inside Create Character with a focused three-part player workflow: review starting equipment, add optional equipment, then review and finalize.
+- Keep custody, provenance, reconciliation values, audit history, instance identity, and other troubleshooting controls in the standalone Manage Loadout workflow.
+- Materialize and reconcile intact starting grants automatically during character creation, with plain-language recovery actions when calculated starting equipment changes.
+- Default optional equipment added during creation to the character, Common craftsmanship, and carried location while preserving detailed editing in Manage Loadout.
+- Group the creation loadout into Weapons, Armour, Ammunition, and Gear, with readable profiles, compact armour and encumbrance summaries, and one clear finalization action.
+- Treat a valid catalogue item without a printed weight as `0 kg`; only a genuinely missing catalogue definition remains unresolved and blocks finalization.
+- Add regression coverage proving that the simplified creation mode hides maintenance controls, preserves the detailed manager, and remains usable at the 960x650 minimum window.
+
 ### Added
 
 - Added a shared Character Inventory editor to Create Character and a new standalone Manage Loadout landing workflow.
@@ -43,7 +53,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Changed
 
 - Character saves now use envelope/state version 4 and public interoperability schema `1.3.0`, with v1-v3 migration to an unprepared draft loadout.
-- The landing page now uses a responsive four-workflow layout and the application version is `0.7.0-dev`.
+- The landing page now uses a responsive four-workflow layout and the application version is `0.7.1-dev` while the focused loadout-creation refinement is in development.
 - Character dossiers now print the owned loadout, custody/location context, known carried weight, and armour by location instead of only the calculated starting-equipment preview.
 
 - Regiment and character starting packages now resolve equipment through the same shared catalogue instead of maintaining duplicate local definition maps.
