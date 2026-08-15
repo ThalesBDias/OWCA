@@ -108,7 +108,7 @@ func _render_editor() -> void:
 	editor = InventoryEditorScript.new()
 	editor.inventory_changed.connect(_on_inventory_changed)
 	content.add_child(editor)
-	editor.call("configure", state, calculation, repository)
+	editor.call("configure", state, calculation, repository, &"maintenance")
 
 
 func _on_inventory_changed(message: String) -> void:

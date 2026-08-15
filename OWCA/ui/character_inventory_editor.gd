@@ -8,10 +8,13 @@ extends VBoxContainer
 signal inventory_changed(message: String)
 
 const InventoryServiceScript = preload("res://OWCA/scripts/character_inventory_service.gd")
+const MODE_CREATION: StringName = &"creation"
+const MODE_MAINTENANCE: StringName = &"maintenance"
 
 var state: CharacterState
 var calculation: Dictionary = {}
 var character_repository: CharacterDataRepository
+var presentation_mode: StringName = MODE_MAINTENANCE
 var inventory_service: RefCounted = InventoryServiceScript.new()
 var catalogue_search: LineEdit
 var category_filter: OptionButton
@@ -21,10 +24,11 @@ var _catalogue_matches: Array[Dictionary] = []
 var owned_custodian_filter: String = "all"
 
 
-func configure(character_state: CharacterState, result: Dictionary, repository: CharacterDataRepository) -> void:
+func configure(character_state: CharacterState, result: Dictionary, repository: CharacterDataRepository, mode: StringName = MODE_MAINTENANCE) -> void:
 	state = character_state
 	calculation = result.duplicate(true)
 	character_repository = repository
+	presentation_mode = mode if mode in [MODE_CREATION, MODE_MAINTENANCE] else MODE_MAINTENANCE
 	_rebuild()
 
 
@@ -35,6 +39,19 @@ func _rebuild() -> void:
 	if state == null or character_repository == null:
 		add_child(_label("Load a character to manage its equipment."))
 		return
+	if presentation_mode == MODE_CREATION:
+		_rebuild_creation()
+		return
+	_rebuild_maintenance()
+
+
+func _rebuild_creation() -> void:
+	add_child(_named_section("CreationStartingEquipment", "STARTING EQUIPMENT"))
+	add_child(_named_section("CreationOptionalEquipment", "ADD OPTIONAL EQUIPMENT"))
+	add_child(_named_section("CreationReviewFinalize", "REVIEW AND FINALIZE"))
+
+
+func _rebuild_maintenance() -> void:
 	add_child(_heading("CHARACTER INVENTORY AND LOADOUT"))
 	add_child(_label("Loadout: %s  |  Owned rows: %d  |  Audit events: %d" % [state.loadout_state, state.owned_items.size(), state.inventory_events.size()]))
 	_build_comrade_controls()
@@ -406,6 +423,13 @@ func _heading(text: String) -> Label:
 	label.text = text
 	label.add_theme_font_size_override("font_size", 14)
 	return label
+
+
+func _named_section(node_name: StringName, title: String) -> VBoxContainer:
+	var section := VBoxContainer.new()
+	section.name = node_name
+	section.add_child(_heading(title))
+	return section
 
 
 func _label(text: String) -> Label:

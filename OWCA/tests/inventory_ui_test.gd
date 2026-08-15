@@ -66,19 +66,19 @@ func _run() -> void:
 		"reconciliation": "present", "note": ""
 	}]
 	var editor_script := load("res://OWCA/ui/character_inventory_editor.gd") as GDScript
-	var shared_editor := editor_script.new() as VBoxContainer
-	root.add_child(shared_editor)
-	shared_editor.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
-	shared_editor.call("configure", prepared_state, CharacterCalculator.new().calculate(prepared_state, regiment_repository, repository), repository)
-	shared_editor.size.x = 960.0
+	var maintenance_editor := editor_script.new() as VBoxContainer
+	root.add_child(maintenance_editor)
+	maintenance_editor.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
+	maintenance_editor.call("configure", prepared_state, CharacterCalculator.new().calculate(prepared_state, regiment_repository, repository), repository, &"maintenance")
+	maintenance_editor.size.x = 960.0
 	await process_frame
-	_assert_true(_find_named(shared_editor, "CraftsmanshipSelector") != null, "owned rows expose craftsmanship editing")
-	_assert_true(_find_named(shared_editor, "OriginSelector") != null, "owned rows expose origin editing")
-	_assert_true(_find_named(shared_editor, "OwnedCustodianFilter") != null, "owned inventory can be filtered by custodian")
-	_assert_true(_find_named(shared_editor, "StartingGrantReconciliation") != null, "starting grants expose explicit reconciliation controls")
-	_assert_true(_find_button(shared_editor, "SPLIT ONE") != null, "stackable equipment exposes a safe split action")
-	var catalogue_search := shared_editor.get("catalogue_search") as LineEdit
-	var catalogue_details := shared_editor.get("catalogue_details") as RichTextLabel
+	_assert_true(_find_named(maintenance_editor, "CraftsmanshipSelector") != null, "owned rows expose craftsmanship editing")
+	_assert_true(_find_named(maintenance_editor, "OriginSelector") != null, "owned rows expose origin editing")
+	_assert_true(_find_named(maintenance_editor, "OwnedCustodianFilter") != null, "owned inventory can be filtered by custodian")
+	_assert_true(_find_named(maintenance_editor, "StartingGrantReconciliation") != null, "starting grants expose explicit reconciliation controls")
+	_assert_true(_find_button(maintenance_editor, "SPLIT ONE") != null, "stackable equipment exposes a safe split action")
+	var catalogue_search := maintenance_editor.get("catalogue_search") as LineEdit
+	var catalogue_details := maintenance_editor.get("catalogue_details") as RichTextLabel
 	_assert_true(catalogue_search != null and catalogue_details != null, "catalogue exposes searchable item details")
 	if catalogue_search != null and catalogue_details != null:
 		catalogue_search.text = "m36 lasgun"
@@ -86,8 +86,23 @@ func _run() -> void:
 		await process_frame
 		_assert_true("Reload Full" in catalogue_details.text, "weapon details include reload time")
 		_assert_true("Qualities Reliable" in catalogue_details.text, "weapon details include qualities")
-	_assert_interactive_controls_fit_width(shared_editor, 960.0)
-	shared_editor.queue_free()
+	_assert_interactive_controls_fit_width(maintenance_editor, 960.0)
+	maintenance_editor.queue_free()
+	await process_frame
+
+	var creation_editor := editor_script.new() as VBoxContainer
+	root.add_child(creation_editor)
+	creation_editor.call("configure", prepared_state, CharacterCalculator.new().calculate(prepared_state, regiment_repository, repository), repository, &"creation")
+	await process_frame
+	_assert_true(_find_named(creation_editor, "CreationStartingEquipment") != null, "creation mode exposes Starting Equipment")
+	_assert_true(_find_named(creation_editor, "CreationOptionalEquipment") != null, "creation mode exposes Add Optional Equipment")
+	_assert_true(_find_named(creation_editor, "CreationReviewFinalize") != null, "creation mode exposes Review and Finalize")
+	_assert_true(_find_named(creation_editor, "CraftsmanshipSelector") == null, "creation mode hides craftsmanship administration")
+	_assert_true(_find_named(creation_editor, "OriginSelector") == null, "creation mode hides provenance administration")
+	_assert_true(_find_named(creation_editor, "OwnedCustodianFilter") == null, "creation mode hides custody administration")
+	_assert_true(_find_named(creation_editor, "StartingGrantReconciliation") == null, "creation mode hides reconciliation values")
+	_assert_true(_find_text(creation_editor, "RECENT INVENTORY HISTORY") == null, "creation mode hides audit history")
+	creation_editor.queue_free()
 
 	if _failures > 0:
 		printerr("OWCA inventory UI tests failed: %d assertion(s)." % _failures)
@@ -104,6 +119,18 @@ func _find_button(node: Node, exact_text: String) -> Button:
 		if child is Button and (child as Button).text == exact_text:
 			return child as Button
 		var nested := _find_button(child, exact_text)
+		if nested != null:
+			return nested
+	return null
+
+
+func _find_text(node: Node, exact_text: String) -> Label:
+	if node == null:
+		return null
+	for child in node.get_children():
+		if child is Label and (child as Label).text == exact_text:
+			return child as Label
+		var nested := _find_text(child, exact_text)
 		if nested != null:
 			return nested
 	return null
