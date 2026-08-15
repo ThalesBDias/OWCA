@@ -104,7 +104,7 @@ Implemented scope:
 
 - present Starting Equipment, Add Optional Equipment, and Review and Finalize as the only primary creation sections;
 - hide custody, provenance, reconciliation enums, audit history, durable IDs, and technical lifecycle terminology from the normal creation path;
-- materialize and reconcile intact calculated grants automatically;
+- let players prepare starting equipment, then reconcile intact prepared grants automatically;
 - replace technical reconciliation failures with a plain-language restore action;
 - default newly added optional equipment to the character, Common craftsmanship, and carried location;
 - group the visible loadout into Weapons, Armour, Ammunition, and Gear;
