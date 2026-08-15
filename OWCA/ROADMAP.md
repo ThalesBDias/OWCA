@@ -18,7 +18,7 @@ Attacks, damage rolls, tests, current-magazine tracking, temporary Wounds, condi
 | v0.5.1 | Released | JSON interoperability and file safety | Exchange versioned data safely, migrate older files, and recover interrupted saves |
 | v0.6.0 | Implemented | Weapon and equipment catalogue | Browse complete supported equipment definitions and weapon statistics |
 | v0.7.0 | Implemented development baseline | Character inventory and loadouts | Maintain owned gear, armour locations, loadout completeness, and carried weight |
-| v0.7.1 | Current development | Player-facing loadout refinement | Prepare starting gear, add optional equipment, and finalize through a clear creation workflow |
+| v0.7.1 | Implemented development state | Player-facing loadout refinement | Prepare starting gear, add optional equipment, and finalize through a clear creation workflow |
 | v0.8.0 | Planned | Weapon modifications | Upgrade individual weapons and calculate compatible modified statistics |
 | v0.9.0 | Planned | Campaign advancement | Award XP, manage lasting character changes, and advance Guardsmen and Comrades |
 | v0.10.0 | Planned | Player journal and editable dossier | Maintain notes and logs, then choose how they appear in normal or ink-saving exports |
@@ -96,11 +96,11 @@ Inventory history is an audit record, not a simulation of every moment at the ta
 
 The v0.7.0 implementation is the internal functional baseline for PR #13 and is not intended to be deployed separately. The first deployable v0.7 candidate is v0.7.1 after its character-creation presentation is ready for players.
 
-## v0.7.1 - Player-facing loadout refinement (current development)
+## v0.7.1 - Player-facing loadout refinement (implemented development state)
 
 Goal: make the Create Character loadout stage clear to a player without removing the detailed inventory controls needed for maintenance and troubleshooting.
 
-Planned scope:
+Implemented scope:
 
 - present Starting Equipment, Add Optional Equipment, and Review and Finalize as the only primary creation sections;
 - hide custody, provenance, reconciliation enums, audit history, durable IDs, and technical lifecycle terminology from the normal creation path;
@@ -113,7 +113,7 @@ Planned scope:
 - retain unresolved-definition blocking when the catalogue definition itself is missing;
 - provide one clear **Finalize Loadout and Continue to Review** action with a nearby explanation when unavailable;
 - preserve the full technical workflow in Manage Loadout; and
-- verify both presentation modes at the 960x650 minimum window.
+- cover both presentation modes at the 960x650 minimum window with regression tests.
 
 This refinement changes presentation and the missing-weight calculation rule. It does not change the v4 inventory save model, audit semantics, ownership model, or interoperability schema.
 
