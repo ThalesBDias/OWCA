@@ -303,12 +303,34 @@ func _run() -> void:
 	var creation_catalogue_search := creation_editor.get("catalogue_search") as LineEdit
 	var creation_catalogue_details := creation_editor.get("catalogue_details") as RichTextLabel
 	var creation_catalogue_selector := creation_editor.get("catalogue_selector") as OptionButton
+	var creation_catalogue_category := creation_editor.get("category_filter") as OptionButton
 	var creation_inventory_messages: Array[String] = []
 	var creation_completion_messages: Array[String] = []
 	creation_editor.connect("inventory_changed", func(message: String) -> void: creation_inventory_messages.append(message))
 	creation_editor.connect("creation_finished", func(message: String) -> void: creation_completion_messages.append(message))
-	_assert_true(creation_catalogue_search != null and creation_catalogue_selector != null, "creation mode exposes searchable optional equipment")
-	if creation_catalogue_search != null and creation_catalogue_selector != null:
+	_assert_true(creation_catalogue_search != null and creation_catalogue_selector != null and creation_catalogue_category != null, "creation mode exposes searchable optional equipment")
+	if creation_catalogue_search != null and creation_catalogue_selector != null and creation_catalogue_category != null:
+		var ammunition_index := -1
+		for index in creation_catalogue_category.item_count:
+			if str(creation_catalogue_category.get_item_metadata(index)) == "ammunition":
+				ammunition_index = index
+				break
+		_assert_true(ammunition_index >= 0, "creation catalogue offers an Ammunition category")
+		if ammunition_index >= 0:
+			creation_catalogue_category.select(ammunition_index)
+			creation_catalogue_category.item_selected.emit(ammunition_index)
+			await process_frame
+			var has_charge_pack := false
+			var has_m36_lasgun := false
+			for index in creation_catalogue_selector.item_count:
+				var item_text := creation_catalogue_selector.get_item_text(index)
+				has_charge_pack = has_charge_pack or item_text == "Charge pack"
+				has_m36_lasgun = has_m36_lasgun or item_text == "M36 lasgun"
+			_assert_true(has_charge_pack, "creation Ammunition filter shows ammunition entries")
+			_assert_true(not has_m36_lasgun, "creation Ammunition filter hides ranged weapons")
+		creation_catalogue_category.select(0)
+		creation_catalogue_category.item_selected.emit(0)
+		await process_frame
 		creation_catalogue_search.text = "m36 lasgun"
 		creation_catalogue_search.text_changed.emit(creation_catalogue_search.text)
 		await process_frame
