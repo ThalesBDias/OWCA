@@ -130,10 +130,12 @@ func _run() -> void:
 		_assert_equal(optional_item.get("origin", ""), "later_issue", "creation optional item defaults to later issue origin")
 	creation_editor.queue_free()
 	await process_frame
+	var optional_calculation := CharacterCalculator.new().calculate(prepared_state, regiment_repository, repository)
+	optional_calculation["starting_equipment"] = starting_grants.duplicate(true)
 	var optional_editor := editor_script.new() as VBoxContainer
 	root.add_child(optional_editor)
 	optional_editor.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
-	optional_editor.call("configure", prepared_state, prepared_calculation, repository, &"creation")
+	optional_editor.call("configure", prepared_state, optional_calculation, repository, &"creation")
 	optional_editor.size.x = 960.0
 	await process_frame
 	var optional_section := _find_named(optional_editor, "CreationOptionalEquipment")
@@ -141,6 +143,7 @@ func _run() -> void:
 	_assert_true(_find_button(optional_editor, "ADD EQUIPMENT") != null, "creation add action uses concise player-facing text")
 	var optional_remove := _find_named(optional_section, "CreationOptionalRemoveButton") as Button
 	_assert_true(optional_remove != null, "creation optional additions expose a remove action")
+	_assert_true(_find_text_contains(optional_section, "Basic | Damage 1d10+3 E | Pen") != null, "creation optional M36 card preserves the concise weapon profile")
 	if optional_remove != null:
 		var optional_count_before_removal := prepared_state.owned_items.size()
 		optional_remove.pressed.emit()

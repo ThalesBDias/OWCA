@@ -131,7 +131,7 @@ func _build_creation_optional_equipment(parent: VBoxContainer) -> void:
 		var category := str(resolved.get("category", definition.get("category", "")))
 		(grouped_items[_creation_group_for_category(category)] as Array).append({
 			"owned": owned,
-			"resolved": resolved
+			"resolved": definition if not definition.is_empty() else resolved
 		})
 	for group_name in ["WEAPONS", "ARMOUR", "AMMUNITION", "GEAR"]:
 		var entries := grouped_items[group_name] as Array
