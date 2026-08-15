@@ -94,6 +94,8 @@ func _run() -> void:
 	_assert_true(prepare_starting_equipment != null, "unprepared creation exposes a prepare starting equipment action")
 	if prepare_starting_equipment != null:
 		_assert_true(prepare_starting_equipment.text == "PREPARE STARTING EQUIPMENT", "creation preparation action uses player-facing text")
+	var unprepared_finalize := _find_named(unprepared_editor, "FinalizeAndContinueButton") as Button
+	_assert_true(unprepared_finalize != null and unprepared_finalize.disabled, "unprepared creation exposes a disabled finalization action")
 	_assert_true(_find_named(unprepared_editor, "StartingGrantReconciliation") == null, "unprepared creation hides reconciliation controls")
 	unprepared_editor.queue_free()
 	await process_frame

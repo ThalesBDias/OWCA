@@ -111,13 +111,24 @@ func _assert_loadout_stage_navigation_fits(creator: Control, test_size: Vector2i
 
 func _assert_creation_finalize_fits(creator: Control) -> void:
 	var content_panel := creator.get("content_panel") as Control
-	var finalize := _find_named(creator.get("stage_content") as Node, "FinalizeAndContinueButton") as Button
+	var stage_content := creator.get("stage_content") as Control
+	var finalize := _find_named(stage_content, "FinalizeAndContinueButton") as Button
 	_assert_true(finalize != null and not finalize.disabled, "creation Loadout stage exposes an enabled finalization action at 960x650")
-	if finalize != null and content_panel != null:
+	if finalize != null and content_panel != null and stage_content != null:
 		var content_rect := content_panel.get_global_rect()
 		var finalize_rect := finalize.get_global_rect()
 		_assert_true(finalize_rect.position.x >= content_rect.position.x - 1.0, "creation finalization action begins inside the content panel at 960x650")
 		_assert_true(finalize_rect.end.x <= content_rect.end.x + 1.0, "creation finalization action ends inside the content panel at 960x650")
+		var stage_scroll := stage_content.get_parent() as ScrollContainer
+		_assert_true(stage_scroll != null, "creation Loadout content has a scroll container at 960x650")
+		if stage_scroll != null:
+			var visible_in_viewport := finalize_rect.position.y >= stage_scroll.get_global_rect().position.y - 1.0 and finalize_rect.end.y <= stage_scroll.get_global_rect().end.y + 1.0
+			var scroll_bar := stage_scroll.get_v_scroll_bar()
+			var local_top := finalize_rect.position.y - stage_content.get_global_rect().position.y
+			var local_bottom := finalize_rect.end.y - stage_content.get_global_rect().position.y
+			var maximum_scroll := scroll_bar.max_value - scroll_bar.page
+			var reachable_by_scroll := stage_content.is_ancestor_of(finalize) and finalize_rect.size.y <= stage_scroll.size.y + 1.0 and local_top >= -1.0 and local_bottom <= maximum_scroll + stage_scroll.size.y + 1.0
+			_assert_true(visible_in_viewport or reachable_by_scroll, "creation finalization action is vertically visible or reachable through the Loadout scroll container at 960x650")
 
 
 func _collect_roll_buttons(node: Node, output: Array[Button]) -> void:
