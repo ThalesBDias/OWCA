@@ -5,6 +5,7 @@ extends Control
 const REGIMENT_SCENE := "res://OWCA/ui/RegimentCreator.tscn"
 const CHARACTER_SCENE := "res://OWCA/ui/CharacterCreator.tscn"
 const ARMOURY_SCENE := "res://OWCA/ui/ArmouryCatalogue.tscn"
+const LOADOUT_SCENE := "res://OWCA/ui/LoadoutManager.tscn"
 
 const COLOUR_BACKGROUND := Color("#101612")
 const COLOUR_PANEL_ALT := Color("#202b23")
@@ -28,14 +29,14 @@ func _build_interface() -> void:
 
 	var margin := MarginContainer.new()
 	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	margin.add_theme_constant_override("margin_left", 40)
-	margin.add_theme_constant_override("margin_top", 54)
-	margin.add_theme_constant_override("margin_right", 40)
-	margin.add_theme_constant_override("margin_bottom", 42)
+	margin.add_theme_constant_override("margin_left", 24)
+	margin.add_theme_constant_override("margin_top", 20)
+	margin.add_theme_constant_override("margin_right", 24)
+	margin.add_theme_constant_override("margin_bottom", 18)
 	add_child(margin)
 
 	var page := VBoxContainer.new()
-	page.add_theme_constant_override("separation", 28)
+	page.add_theme_constant_override("separation", 10)
 	margin.add_child(page)
 
 	var header := VBoxContainer.new()
@@ -59,8 +60,8 @@ func _build_interface() -> void:
 	page.add_child(spacer_top)
 
 	var cards := GridContainer.new()
-	cards.columns = 3
-	cards.add_theme_constant_override("separation", 24)
+	cards.columns = 2
+	cards.add_theme_constant_override("separation", 14)
 	page.add_child(cards)
 	cards.add_child(_build_workflow_card(
 		"CREATE REGIMENT",
@@ -75,6 +76,13 @@ func _build_interface() -> void:
 		"Load a saved regiment, enter the nine rolled Characteristics, choose one of five Core Guardsman Specialities, and resolve every individual starting choice.",
 		"OPEN CHARACTER CREATOR",
 		_open_character_creator
+	))
+	cards.add_child(_build_workflow_card(
+		"MANAGE LOADOUT",
+		"NEW IN v0.7",
+		"Load a saved character, maintain owned equipment and custody, review carried weight and armour, and preserve an inventory audit history.",
+		"OPEN LOADOUT MANAGER",
+		_open_loadout_manager
 	))
 	cards.add_child(_build_workflow_card(
 		"BROWSE ARMOURY",
@@ -122,10 +130,10 @@ func _on_music_enabled_changed(enabled: bool) -> void:
 
 func _build_workflow_card(title_text: String, status_text: String, description: String, button_text: String, callback: Callable) -> PanelContainer:
 	var panel := _make_panel(COLOUR_PANEL_ALT, COLOUR_BORDER, 22)
-	panel.custom_minimum_size = Vector2(260, 300)
+	panel.custom_minimum_size = Vector2(260, 178)
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 14)
+	column.add_theme_constant_override("separation", 7)
 	panel.add_child(column)
 
 	var status := Label.new()
@@ -136,7 +144,7 @@ func _build_workflow_card(title_text: String, status_text: String, description: 
 
 	var heading := Label.new()
 	heading.text = title_text
-	heading.add_theme_font_size_override("font_size", 25)
+	heading.add_theme_font_size_override("font_size", 21)
 	heading.add_theme_color_override("font_color", COLOUR_TEXT)
 	column.add_child(heading)
 
@@ -146,13 +154,13 @@ func _build_workflow_card(title_text: String, status_text: String, description: 
 	body.text = description
 	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	body.add_theme_font_size_override("font_size", 15)
+	body.add_theme_font_size_override("font_size", 13)
 	body.add_theme_color_override("font_color", COLOUR_MUTED)
 	column.add_child(body)
 
 	var button := Button.new()
 	button.text = button_text
-	button.custom_minimum_size.y = 48
+	button.custom_minimum_size.y = 40
 	button.pressed.connect(callback)
 	column.add_child(button)
 	return panel
@@ -183,3 +191,7 @@ func _open_character_creator() -> void:
 
 func _open_armoury_catalogue() -> void:
 	get_tree().change_scene_to_file(ARMOURY_SCENE)
+
+
+func _open_loadout_manager() -> void:
+	get_tree().change_scene_to_file(LOADOUT_SCENE)

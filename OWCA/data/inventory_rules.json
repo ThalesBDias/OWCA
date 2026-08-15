@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "content_version": "0.7.0-core-inventory",
+  "source": { "book": "ow_core", "page": 36, "page_end": 37 },
+  "carrying_capacity": [
+    { "bonus_sum": 0, "carrying_kg": 0.9, "lifting_kg": 2.25 },
+    { "bonus_sum": 1, "carrying_kg": 2.25, "lifting_kg": 4.5 },
+    { "bonus_sum": 2, "carrying_kg": 4.5, "lifting_kg": 9.0 },
+    { "bonus_sum": 3, "carrying_kg": 9.0, "lifting_kg": 18.0 },
+    { "bonus_sum": 4, "carrying_kg": 18.0, "lifting_kg": 36.0 },
+    { "bonus_sum": 5, "carrying_kg": 27.0, "lifting_kg": 54.0 },
+    { "bonus_sum": 6, "carrying_kg": 36.0, "lifting_kg": 72.0 },
+    { "bonus_sum": 7, "carrying_kg": 45.0, "lifting_kg": 90.0 },
+    { "bonus_sum": 8, "carrying_kg": 56.0, "lifting_kg": 112.0 },
+    { "bonus_sum": 9, "carrying_kg": 67.0, "lifting_kg": 134.0 },
+    { "bonus_sum": 10, "carrying_kg": 78.0, "lifting_kg": 156.0 },
+    { "bonus_sum": 11, "carrying_kg": 90.0, "lifting_kg": 180.0 },
+    { "bonus_sum": 12, "carrying_kg": 112.0, "lifting_kg": 224.0 },
+    { "bonus_sum": 13, "carrying_kg": 225.0, "lifting_kg": 450.0 },
+    { "bonus_sum": 14, "carrying_kg": 337.0, "lifting_kg": 674.0 },
+    { "bonus_sum": 15, "carrying_kg": 450.0, "lifting_kg": 900.0 },
+    { "bonus_sum": 16, "carrying_kg": 675.0, "lifting_kg": 1350.0 },
+    { "bonus_sum": 17, "carrying_kg": 900.0, "lifting_kg": 1800.0 },
+    { "bonus_sum": 18, "carrying_kg": 1350.0, "lifting_kg": 2700.0 },
+    { "bonus_sum": 19, "carrying_kg": 1800.0, "lifting_kg": 3600.0 },
+    { "bonus_sum": 20, "carrying_kg": 2250.0, "lifting_kg": 4500.0 }
+  ]
+}

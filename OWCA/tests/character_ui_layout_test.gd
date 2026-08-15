@@ -23,6 +23,7 @@ func _run() -> void:
 		creator.call("_render_active_stage")
 		await process_frame
 		_assert_advancement_buttons_fit(creator, test_size)
+		_assert_loadout_stage_navigation_fits(creator, test_size)
 
 	creator.call("_select_stage", "characteristics")
 	await process_frame
@@ -34,6 +35,39 @@ func _run() -> void:
 		await process_frame
 		_assert_roll_buttons_fit(creator, test_size)
 
+	root.size = Vector2i(960, 650)
+	var character_repository := creator.get("character_repository") as CharacterDataRepository
+	var regiment_repository := creator.get("regiment_repository") as RegimentDataRepository
+	var finalization_state := CharacterState.new()
+	var grants: Array = [{ "id": "knife", "quantity": 1, "scope": "per_character" }]
+	CharacterInventoryService.new().materialize_starting_loadout(finalization_state, grants, character_repository.equipment_repository, "2026-08-15T13:00:00Z")
+	var finalization_calculation := CharacterCalculator.new().calculate(finalization_state, regiment_repository, character_repository)
+	finalization_calculation["valid"] = true
+	finalization_calculation["errors"] = []
+	finalization_calculation["unresolved_choices"] = []
+	finalization_calculation["starting_equipment"] = grants
+	creator.set("state", finalization_state)
+	creator.set("calculation", finalization_calculation)
+	creator.call("_select_stage", "loadout")
+	await process_frame
+	for test_size in [Vector2i(960, 650), Vector2i(1280, 800)]:
+		root.size = test_size
+		await process_frame
+		creator.call("_apply_responsive_layout")
+		creator.call("_render_active_stage")
+		await process_frame
+		_assert_loadout_surface_fits(creator, test_size)
+
+	root.size = Vector2i(960, 650)
+	await process_frame
+	creator.call("_apply_responsive_layout")
+	creator.call("_render_active_stage")
+	await process_frame
+	_assert_creation_finalize_fits(creator)
+
+	creator.set("state", CharacterState.new())
+	creator.call("_refresh")
+	await process_frame
 	creator.call("_select_stage", "review")
 	await process_frame
 	var export_button := _find_button(creator.get("stage_content") as Node, "EXPORT A4 PDF + PNG")
@@ -80,6 +114,65 @@ func _assert_roll_buttons_fit(creator: Control, test_size: Vector2i) -> void:
 		_assert_true(button_rect.end.x <= content_rect.end.x + 1.0, "roll button ends inside content panel at %s" % test_size)
 
 
+func _assert_loadout_stage_navigation_fits(creator: Control, test_size: Vector2i) -> void:
+	var stage_buttons := creator.get("stage_buttons") as Dictionary
+	var loadout_button := stage_buttons.get("loadout") as Button
+	var status_label := creator.get("status_label") as Label
+	_assert_true(loadout_button != null, "Loadout stage navigation exists at %s" % test_size)
+	_assert_true(status_label != null and loadout_button.get_global_rect().end.y < status_label.get_global_rect().position.y, "Loadout stage remains above the bottom status panel at %s" % test_size)
+
+
+func _assert_loadout_surface_fits(creator: Control, test_size: Vector2i) -> void:
+	var summary_panel := creator.get("summary_panel") as Control
+	var content_panel := creator.get("content_panel") as Control
+	var stage_content := creator.get("stage_content") as Control
+	_assert_true(summary_panel != null and summary_panel.visible == (test_size.x >= 1100), "live summary visibility follows the actual window width at %s" % test_size)
+	_assert_true(content_panel != null and stage_content != null, "Loadout content exists at %s" % test_size)
+	if content_panel != null:
+		_assert_true(content_panel.get_global_rect().end.x <= creator.size.x + 1.0, "Loadout content panel ends inside the logical canvas at %s" % test_size)
+	if content_panel != null and stage_content != null:
+		_assert_true(stage_content.get_global_rect().end.x <= content_panel.get_global_rect().end.x + 1.0, "Loadout stage content ends inside its panel at %s" % test_size)
+	if content_panel != null and stage_content != null:
+		var optional_section := _find_named(stage_content, "CreationOptionalEquipment")
+		var editor := optional_section.get_parent() as VBoxContainer if optional_section != null else null
+		var catalogue_search := editor.get("catalogue_search") as LineEdit if editor != null else null
+		var category_filter := editor.get("category_filter") as OptionButton if editor != null else null
+		var catalogue_selector := editor.get("catalogue_selector") as OptionButton if editor != null else null
+		var add_button := _find_button(optional_section, "ADD EQUIPMENT")
+		_assert_true(catalogue_search != null and category_filter != null and catalogue_selector != null and add_button != null, "creation catalogue controls exist at %s" % test_size)
+		if catalogue_search != null and category_filter != null and catalogue_selector != null and add_button != null:
+			for control in [catalogue_search, category_filter, catalogue_selector, add_button]:
+				_assert_true(control.get_global_rect().position.x >= content_panel.get_global_rect().position.x - 1.0 and control.get_global_rect().end.x <= content_panel.get_global_rect().end.x + 1.0, "%s fits the creation content panel at %s" % [control.name, test_size])
+			_assert_true(category_filter.get_global_rect().position.y >= catalogue_search.get_global_rect().end.y - 0.5, "creation category stacks below search at %s" % test_size)
+			_assert_true(catalogue_selector.get_global_rect().position.y >= category_filter.get_global_rect().end.y - 0.5, "creation selector stacks below category at %s" % test_size)
+			_assert_true(add_button.get_global_rect().position.y >= catalogue_selector.get_global_rect().end.y - 0.5, "creation add action stacks below selector at %s" % test_size)
+	for label in ["HOME", "REGIMENT", "SAVE AS", "LOAD"]:
+		var action := _find_button(creator, label)
+		_assert_true(action != null and action.get_global_rect().end.x <= creator.size.x + 1.0, "%s header action ends inside the logical canvas at %s" % [label, test_size])
+
+
+func _assert_creation_finalize_fits(creator: Control) -> void:
+	var content_panel := creator.get("content_panel") as Control
+	var stage_content := creator.get("stage_content") as Control
+	var finalize := _find_named(stage_content, "FinalizeAndContinueButton") as Button
+	_assert_true(finalize != null and not finalize.disabled, "creation Loadout stage exposes an enabled finalization action at 960x650")
+	if finalize != null and content_panel != null and stage_content != null:
+		var content_rect := content_panel.get_global_rect()
+		var finalize_rect := finalize.get_global_rect()
+		_assert_true(finalize_rect.position.x >= content_rect.position.x - 1.0, "creation finalization action begins inside the content panel at 960x650")
+		_assert_true(finalize_rect.end.x <= content_rect.end.x + 1.0, "creation finalization action ends inside the content panel at 960x650")
+		var stage_scroll := stage_content.get_parent() as ScrollContainer
+		_assert_true(stage_scroll != null, "creation Loadout content has a scroll container at 960x650")
+		if stage_scroll != null:
+			var visible_in_viewport := finalize_rect.position.y >= stage_scroll.get_global_rect().position.y - 1.0 and finalize_rect.end.y <= stage_scroll.get_global_rect().end.y + 1.0
+			var scroll_bar := stage_scroll.get_v_scroll_bar()
+			var local_top := finalize_rect.position.y - stage_content.get_global_rect().position.y
+			var local_bottom := finalize_rect.end.y - stage_content.get_global_rect().position.y
+			var maximum_scroll := scroll_bar.max_value - scroll_bar.page
+			var reachable_by_scroll := stage_content.is_ancestor_of(finalize) and finalize_rect.size.y <= stage_scroll.size.y + 1.0 and local_top >= -1.0 and local_bottom <= maximum_scroll + stage_scroll.size.y + 1.0
+			_assert_true(visible_in_viewport or reachable_by_scroll, "creation finalization action is vertically visible or reachable through the Loadout scroll container at 960x650")
+
+
 func _collect_roll_buttons(node: Node, output: Array[Button]) -> void:
 	for child in node.get_children():
 		if child is Button and str((child as Button).text).begins_with("ROLL"):
@@ -92,6 +185,18 @@ func _find_button(node: Node, exact_text: String) -> Button:
 		if child is Button and (child as Button).text == exact_text:
 			return child as Button
 		var nested := _find_button(child, exact_text)
+		if nested != null:
+			return nested
+	return null
+
+
+func _find_named(node: Node, node_name: String) -> Node:
+	if node == null:
+		return null
+	if node.name == node_name:
+		return node
+	for child in node.get_children():
+		var nested := _find_named(child, node_name)
 		if nested != null:
 			return nested
 	return null

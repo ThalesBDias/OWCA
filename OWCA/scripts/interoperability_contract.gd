@@ -8,7 +8,7 @@ extends RefCounted
 ## across every interoperable OWCA file: public schema compatibility, producer
 ## metadata, extension namespaces, and safe copies of calculated preview data.
 
-const SCHEMA_VERSION := "1.2.0"
+const SCHEMA_VERSION := "1.3.0"
 const SUPPORTED_SCHEMA_MAJOR := 1
 const EXTENSION_KEY_PATTERN := "^[A-Za-z0-9][A-Za-z0-9.-]+/[A-Za-z0-9][A-Za-z0-9._-]*$"
 

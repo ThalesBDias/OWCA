@@ -16,8 +16,9 @@ Attacks, damage rolls, tests, current-magazine tracking, temporary Wounds, condi
 | v0.4.0 | Released | Creation rolls, starting XP, and printable dossiers | Complete creation inputs, spend the initial allowance, and export an A4 record |
 | v0.5.0 | Implemented | Complete Core Talent browser | Search, filter, price, validate, and purchase the complete Core Talent catalogue |
 | v0.5.1 | Released | JSON interoperability and file safety | Exchange versioned data safely, migrate older files, and recover interrupted saves |
-| v0.6.0 | Current development | Weapon and equipment catalogue | Browse complete supported equipment definitions and weapon statistics |
-| v0.7.0 | Planned | Character inventory and loadouts | Maintain owned gear, armour locations, loadout completeness, and carried weight |
+| v0.6.0 | Implemented | Weapon and equipment catalogue | Browse complete supported equipment definitions and weapon statistics |
+| v0.7.0 | Implemented development baseline | Character inventory and loadouts | Maintain owned gear, armour locations, loadout completeness, and carried weight |
+| v0.7.1 | Implemented development state | Player-facing loadout refinement | Prepare starting gear, add optional equipment, and finalize through a clear creation workflow |
 | v0.8.0 | Planned | Weapon modifications | Upgrade individual weapons and calculate compatible modified statistics |
 | v0.9.0 | Planned | Campaign advancement | Award XP, manage lasting character changes, and advance Guardsmen and Comrades |
 | v0.10.0 | Planned | Player journal and editable dossier | Maintain notes and logs, then choose how they appear in normal or ink-saving exports |
@@ -50,7 +51,7 @@ Combat engines may consume these files, but combat rules and session state do no
 
 Save As is not the same operation as Duplicate. Save As preserves the record's document ID at a different path; Duplicate generates a new document ID so external tools do not mistake two independent characters for one record. A lifecycle transition is explicit and validated rather than inferred merely because every current field happens to be filled.
 
-## v0.6.0 - Weapon and equipment catalogue (current development)
+## v0.6.0 - Weapon and equipment catalogue (implemented)
 
 Goal: establish one trustworthy, searchable source of supported Core weapon, ammunition, armour, gear, and upgrade definitions.
 
@@ -68,7 +69,7 @@ Planned scope:
 
 Catalogue definitions are immutable rules data. They are not the individual objects a character owns, and magazine capacity does not imply shot-by-shot ammunition tracking.
 
-## v0.7.0 - Character inventory and loadouts
+## v0.7.0 - Character inventory and loadouts (implemented development baseline)
 
 Goal: let a completed character maintain personal equipment without changing the shared catalogue definition.
 
@@ -92,6 +93,29 @@ Planned scope:
 Equipment acquisition and XP advancement remain separate systems. OWCA records what changed without assuming every item was bought with XP.
 
 Inventory history is an audit record, not a simulation of every moment at the table. Corrections remain possible, but they should be represented clearly enough that a player can understand why the current loadout differs from the original issue.
+
+The v0.7.0 implementation is the internal functional baseline for PR #13 and is not intended to be deployed separately. The first deployable v0.7 candidate is v0.7.1 after its character-creation presentation is ready for players.
+
+## v0.7.1 - Player-facing loadout refinement (implemented development state)
+
+Goal: make the Create Character loadout stage clear to a player without removing the detailed inventory controls needed for maintenance and troubleshooting.
+
+Implemented scope:
+
+- present Starting Equipment, Add Optional Equipment, and Review and Finalize as the only primary creation sections;
+- hide custody, provenance, reconciliation enums, audit history, durable IDs, and technical lifecycle terminology from the normal creation path;
+- let players prepare starting equipment, then reconcile intact prepared grants automatically;
+- replace technical reconciliation failures with a plain-language restore action;
+- default newly added optional equipment to the character, Common craftsmanship, and carried location;
+- group the visible loadout into Weapons, Armour, Ammunition, and Gear;
+- keep concise item profiles, armour by location, and carried-weight information visible;
+- count valid catalogue definitions without a printed weight as `0 kg` rather than producing a partial-total warning;
+- retain unresolved-definition blocking when the catalogue definition itself is missing;
+- provide one clear **Finalize Loadout and Continue to Review** action with a nearby explanation when unavailable;
+- preserve the full technical workflow in Manage Loadout; and
+- cover both presentation modes at the 960x650 minimum window with regression tests.
+
+This refinement changes presentation and the missing-weight calculation rule. It does not change the v4 inventory save model, audit semantics, ownership model, or interoperability schema.
 
 ## v0.8.0 - Weapon modifications
 

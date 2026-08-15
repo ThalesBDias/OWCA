@@ -10,6 +10,7 @@ const CHARACTERISTIC_APTITUDES: Array[String] = [
 	"Weapon Skill", "Ballistic Skill", "Strength", "Toughness", "Agility",
 	"Intelligence", "Perception", "Willpower", "Fellowship"
 ]
+const InventoryCalculatorScript = preload("res://OWCA/scripts/character_inventory_calculator.gd")
 
 
 ## Builds the complete UI/export contract from saved inputs and current rules.
@@ -30,6 +31,8 @@ func calculate(state: CharacterState, regiment_repository: RegimentDataRepositor
 		"aptitudes": {},
 		"special_rules": [],
 		"equipment": {},
+		"starting_equipment": [],
+		"inventory": {},
 		"wounds_modifier": 0,
 		"wounds": 0,
 		"fate_points": 0,
@@ -83,6 +86,16 @@ func calculate(state: CharacterState, regiment_repository: RegimentDataRepositor
 	_add_advancement_sources(result, character_repository)
 	_calculate_derived_values(state, speciality, result)
 	_finalize_aggregates(result, regiment_repository, character_repository)
+	result["starting_equipment"] = (result["equipment"] as Array).duplicate(true)
+	var inventory_calculator: RefCounted = InventoryCalculatorScript.new()
+	var inventory: Dictionary = inventory_calculator.call("calculate", state, result, character_repository.equipment_repository, character_repository.inventory_rules_repository)
+	result["inventory"] = inventory
+	if state.loadout_state != CharacterState.LOADOUT_UNPREPARED:
+		result["equipment"] = (inventory.get("items", []) as Array).duplicate(true)
+		for warning: Variant in inventory.get("warnings", []):
+			(result["warnings"] as Array).append(str(warning))
+		if not bool(inventory.get("valid", true)):
+			(result["errors"] as Array).append("Resolve owned equipment with missing catalogue definitions.")
 	result.erase("_source_keys")
 	result["valid"] = (result["errors"] as Array).is_empty() and (result["unresolved_choices"] as Array).is_empty()
 	return result
@@ -114,7 +127,7 @@ func _apply_regiment(state: CharacterState, regiment_repository: RegimentDataRep
 	for special_rule: Dictionary in regiment_result.get("special_rules", []):
 		(result["special_rules"] as Array).append(special_rule.duplicate(true))
 	for item: Dictionary in regiment_result.get("equipment", []):
-		_add_equipment(result["equipment"] as Dictionary, item, regiment_repository, character_repository)
+		_add_equipment(result["equipment"] as Dictionary, item, regiment_repository, character_repository, "standard_issue")
 	result["wounds_modifier"] = int(regiment_result.get("wounds", 0))
 	for source: Dictionary in regiment_result.get("sources", []):
 		_add_source(source, result, str(source.get("label", regiment_repository.get_source_label(source))))
@@ -216,7 +229,7 @@ func _apply_effects(effects: Dictionary, result: Dictionary, regiment_repository
 			(result["special_rules"] as Array).append((rule_value as Dictionary).duplicate(true))
 	for equipment_value: Variant in effects.get("equipment", []):
 		if equipment_value is Dictionary:
-			_add_equipment(result["equipment"] as Dictionary, equipment_value as Dictionary, regiment_repository, character_repository)
+			_add_equipment(result["equipment"] as Dictionary, equipment_value as Dictionary, regiment_repository, character_repository, "speciality_issue" if modifier_source == "speciality" else "standard_issue")
 
 
 func _add_characteristic_modifier(result: Dictionary, characteristic: String, value: int, source: String) -> void:
@@ -334,7 +347,7 @@ func _add_advancement_sources(result: Dictionary, character_repository: Characte
 		_add_source(source, result, character_repository.get_source_label(source))
 
 
-func _add_equipment(target: Dictionary, entry: Dictionary, regiment_repository: RegimentDataRepository, character_repository: CharacterDataRepository) -> void:
+func _add_equipment(target: Dictionary, entry: Dictionary, regiment_repository: RegimentDataRepository, character_repository: CharacterDataRepository, origin: String) -> void:
 	var item_id := str(entry.get("id", ""))
 	if item_id.is_empty():
 		return
@@ -345,10 +358,17 @@ func _add_equipment(target: Dictionary, entry: Dictionary, regiment_repository: 
 			"id": item_id,
 			"name": _catalog_name("equipment", item_id, regiment_repository, character_repository),
 			"quantity": 0,
-			"scope": scope
+			"scope": scope,
+			"origins": [],
+			"origin_quantities": {}
 		}
 	var output := target[key] as Dictionary
-	output["quantity"] = int(output.get("quantity", 0)) + int(entry.get("quantity", 1))
+	var quantity := int(entry.get("quantity", 1))
+	output["quantity"] = int(output.get("quantity", 0)) + quantity
+	if origin not in (output["origins"] as Array):
+		(output["origins"] as Array).append(origin)
+	var origin_quantities := output["origin_quantities"] as Dictionary
+	origin_quantities[origin] = int(origin_quantities.get(origin, 0)) + quantity
 
 
 func _add_grants(target: Dictionary, entry_id: String, count: int) -> void:

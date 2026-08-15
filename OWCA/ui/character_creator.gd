@@ -3,7 +3,7 @@ extends Control
 ## Functional testing UI for the five Core Guardsman Specialities.
 
 const LANDING_SCENE := "res://OWCA/ui/LandingPage.tscn"
-const STAGE_ORDER: Array[String] = ["regiment", "characteristics", "speciality", "choices", "derived", "xp", "review"]
+const STAGE_ORDER: Array[String] = ["regiment", "characteristics", "speciality", "choices", "derived", "xp", "loadout", "review"]
 const STAGE_LABELS := {
 	"regiment": "Load Regiment",
 	"characteristics": "Characteristics",
@@ -11,8 +11,10 @@ const STAGE_LABELS := {
 	"choices": "Character Choices",
 	"derived": "Wounds, Fate & Movement",
 	"xp": "Spend Starting XP",
+	"loadout": "Loadout",
 	"review": "Review"
 }
+const InventoryEditorScript = preload("res://OWCA/ui/character_inventory_editor.gd")
 const ABBREVIATIONS := {
 	"Weapon Skill": "WS", "Ballistic Skill": "BS", "Strength": "S",
 	"Toughness": "T", "Agility": "Ag", "Intelligence": "Int",
@@ -249,7 +251,8 @@ func _build_workspace() -> Control:
 func _apply_responsive_layout() -> void:
 	if navigation_panel == null or content_panel == null or summary_panel == null:
 		return
-	var window_width := size.x
+	var window := get_window()
+	var window_width := float(window.size.x) if window != null and window.size.x > 0 else size.x
 	if window_width < 1100.0:
 		navigation_panel.custom_minimum_size.x = 170
 		content_panel.custom_minimum_size.x = 0
@@ -381,7 +384,33 @@ func _render_stage_buttons() -> void:
 	(stage_buttons["choices"] as Button).text = "Character Choices\n%d/%d resolved" % [mini(resolved, total_choices), total_choices]
 	(stage_buttons["derived"] as Button).text = "Wounds, Fate & Movement\n%d/2 rolls entered" % derived_count
 	(stage_buttons["xp"] as Button).text = "Spend Starting XP\n%d purchase(s) | %d XP left" % [state.purchased_advances.size(), int(calculation.get("xp_remaining", 0))]
-	(stage_buttons["review"] as Button).text = "Review\n%s" % ("ready" if calculation.get("valid", false) else "incomplete")
+	(stage_buttons["loadout"] as Button).text = "Loadout\n%s | %d item row(s)" % [_loadout_status_label(), state.owned_items.size()]
+	var review_ready := bool(calculation.get("valid", false)) and state.loadout_state == CharacterState.LOADOUT_FINALIZED
+	(stage_buttons["review"] as Button).text = "Review\n%s" % ("ready" if review_ready else ("loadout pending" if calculation.get("valid", false) else "incomplete"))
+
+
+func _loadout_status_label() -> String:
+	match state.loadout_state:
+		CharacterState.LOADOUT_UNPREPARED:
+			return "starting gear not prepared"
+		CharacterState.LOADOUT_DRAFT:
+			return "ready to finalize"
+		CharacterState.LOADOUT_FINALIZED:
+			return "finalized"
+		_:
+			return "needs attention"
+
+
+func _workflow_status_label() -> String:
+	match state.workflow_state:
+		CharacterState.WORKFLOW_DRAFT:
+			return "character creation in progress"
+		CharacterState.WORKFLOW_COMPLETE:
+			return "character creation complete"
+		CharacterState.WORKFLOW_CAMPAIGN:
+			return "campaign active"
+		_:
+			return "needs attention"
 
 
 func _render_active_stage() -> void:
@@ -402,8 +431,30 @@ func _render_active_stage() -> void:
 			_render_derived_stage()
 		"xp":
 			_render_xp_stage()
+		"loadout":
+			_render_loadout_stage()
 		"review":
 			_render_review_stage()
+
+
+func _render_loadout_stage() -> void:
+	var editor: VBoxContainer = InventoryEditorScript.new()
+	editor.inventory_changed.connect(_on_inventory_changed)
+	editor.creation_finished.connect(_on_creation_loadout_finished)
+	stage_content.add_child(editor)
+	editor.call("configure", state, calculation, character_repository, &"creation")
+
+
+func _on_inventory_changed(message: String) -> void:
+	action_message = message
+	_refresh()
+
+
+func _on_creation_loadout_finished(message: String) -> void:
+	action_message = message
+	active_stage = "review"
+	(stage_buttons[active_stage] as Button).button_pressed = true
+	_refresh()
 
 
 func _render_regiment_stage() -> void:
@@ -909,25 +960,26 @@ func _build_advancement_card(option: Dictionary) -> Control:
 
 
 func _render_review_stage() -> void:
+	var review_ready := bool(calculation.get("valid", false)) and state.loadout_state == CharacterState.LOADOUT_FINALIZED
 	var heading := Label.new()
-	heading.text = "CHARACTER BUILD %s" % ("READY" if calculation.get("valid", false) else "INCOMPLETE")
+	heading.text = "CHARACTER BUILD %s" % ("READY" if review_ready else "INCOMPLETE")
 	heading.add_theme_font_size_override("font_size", 22)
-	heading.add_theme_color_override("font_color", COLOUR_GOOD if calculation.get("valid", false) else COLOUR_BAD)
+	heading.add_theme_color_override("font_color", COLOUR_GOOD if review_ready else COLOUR_BAD)
 	stage_content.add_child(heading)
-	stage_content.add_child(_wrapped_label("Lifecycle: %s  |  Record ID: %s" % [state.workflow_state, state.document_id], COLOUR_MUTED))
-	stage_content.add_child(_wrapped_label("Save the editable character as JSON, duplicate it as a new identity, or export a two-page A4 field dossier. The dossier includes a PDF for printing plus two high-resolution PNG pages.", COLOUR_MUTED))
-	var lifecycle_text := "REOPEN AS DRAFT" if state.workflow_state == CharacterState.WORKFLOW_COMPLETE else "MARK CREATION COMPLETE"
+	stage_content.add_child(_wrapped_label("Status: %s  |  Record ID: %s" % [_workflow_status_label(), state.document_id], COLOUR_MUTED))
+	stage_content.add_child(_wrapped_label("Save the editable character as JSON, duplicate it as a new identity, or export an A4 field dossier. Most dossiers use two pages; unusually large loadouts receive continuation pages. A high-resolution PNG is created for every PDF page.", COLOUR_MUTED))
+	var lifecycle_text := "RETURN TO CHARACTER CREATION" if state.workflow_state == CharacterState.WORKFLOW_COMPLETE else "MARK CHARACTER CREATION COMPLETE"
 	if state.workflow_state == CharacterState.WORKFLOW_CAMPAIGN:
 		lifecycle_text = "CAMPAIGN ACTIVE"
 	var lifecycle_button := _make_action_button(lifecycle_text, _toggle_character_completion)
 	lifecycle_button.custom_minimum_size.y = 44
-	lifecycle_button.disabled = state.workflow_state == CharacterState.WORKFLOW_CAMPAIGN or (state.workflow_state != CharacterState.WORKFLOW_COMPLETE and not bool(calculation.get("valid", false)))
-	lifecycle_button.tooltip_text = "Resolve every validation error and remaining choice before completion." if lifecycle_button.disabled else "Persist an explicit lifecycle state in the character file."
+	lifecycle_button.disabled = state.workflow_state == CharacterState.WORKFLOW_CAMPAIGN or (state.workflow_state != CharacterState.WORKFLOW_COMPLETE and (not bool(calculation.get("valid", false)) or state.loadout_state != CharacterState.LOADOUT_FINALIZED))
+	lifecycle_button.tooltip_text = "Resolve every validation error, prepare starting equipment, and finalize the loadout before completing character creation." if lifecycle_button.disabled else "Save this character's current creation status in the character file."
 	stage_content.add_child(lifecycle_button)
 	var export_button := _make_action_button("EXPORT A4 PDF + PNG", _request_character_sheet_export)
 	export_button.custom_minimum_size.y = 48
 	export_button.disabled = not bool(calculation.get("valid", false))
-	export_button.tooltip_text = "Resolve every validation error and remaining choice before export." if export_button.disabled else "Creates one two-page A4 PDF and two 300-DPI PNG pages."
+	export_button.tooltip_text = "Resolve every validation error and remaining choice before export." if export_button.disabled else "Creates one printable A4 PDF and one 300-DPI PNG per page."
 	stage_content.add_child(export_button)
 	var save_button := _make_action_button("SAVE CHARACTER JSON AS", _request_character_save)
 	save_button.custom_minimum_size.y = 46
@@ -942,6 +994,8 @@ func _render_review_stage() -> void:
 	var lines: Array[String] = ["[color=#d5b35b][b]VALIDATION[/b][/color]"]
 	if (calculation.get("errors", []) as Array).is_empty() and (calculation.get("unresolved_choices", []) as Array).is_empty():
 		lines.append("No creation errors detected.")
+	if state.loadout_state != CharacterState.LOADOUT_FINALIZED:
+		lines.append("[color=#d5b35b]- Starting loadout must be prepared, reconciled, and finalized.[/color]")
 	for error: Variant in calculation.get("errors", []):
 		lines.append("[color=#ef7c70]- %s[/color]" % _escape_bbcode(str(error)))
 	for choice: Dictionary in calculation.get("unresolved_choices", []):
@@ -983,7 +1037,8 @@ func _render_summary() -> void:
 	var lines: Array[String] = []
 	lines.append("[font_size=20][color=#d5b35b]%s[/color][/font_size]" % _escape_bbcode(state.character_name))
 	lines.append("[color=#a5ad9d]Player:[/color] %s" % _escape_bbcode(state.player_name if not state.player_name.is_empty() else "-"))
-	lines.append("[color=#a5ad9d]Record:[/color] %s  |  [color=#a5ad9d]Lifecycle:[/color] %s" % [state.document_id.left(8), state.workflow_state])
+	lines.append("[color=#a5ad9d]Record:[/color] %s  |  [color=#a5ad9d]Status:[/color] %s" % [state.document_id.left(8), _workflow_status_label()])
+	lines.append("[color=#a5ad9d]Loadout:[/color] %s  |  [color=#a5ad9d]Comrade:[/color] %s" % [_loadout_status_label(), _escape_bbcode(str(state.comrade.get("name", "-")))])
 	lines.append("[color=#a5ad9d]Regiment:[/color] %s" % _escape_bbcode(str(calculation.get("regiment_name", "No regiment loaded"))))
 	lines.append("[color=#a5ad9d]Speciality:[/color] %s" % _escape_bbcode(str(calculation.get("speciality_name", "-"))))
 	lines.append("")
@@ -1037,6 +1092,9 @@ func _render_summary() -> void:
 	for item: Dictionary in calculation.get("equipment", []):
 		equipment.append("%dx %s" % [item.get("quantity", 1), item.get("name", "Item")])
 	lines.append(", ".join(equipment) if not equipment.is_empty() else "-")
+	var encumbrance := (calculation.get("inventory", {}) as Dictionary).get("encumbrance", {}) as Dictionary
+	if not encumbrance.is_empty():
+		lines.append("Known carried weight: %.2f / %.2f kg (%s)" % [float(encumbrance.get("known_weight_kg", 0.0)), float(encumbrance.get("carrying_limit_kg", 0.0)), str(encumbrance.get("status", "partial")).replace("_", " ")])
 
 	lines.append("\n[color=#d5b35b][b]SOURCES[/b][/color]")
 	var sources: Array[String] = []
@@ -1047,7 +1105,7 @@ func _render_summary() -> void:
 
 
 func _render_status() -> void:
-	status_label.text = "%s  |  %s" % ["VALID GUARDSMAN" if calculation.get("valid", false) else "INCOMPLETE / INVALID", state.workflow_state.to_upper()]
+	status_label.text = "%s  |  %s" % ["VALID GUARDSMAN" if calculation.get("valid", false) else "INCOMPLETE / INVALID", _workflow_status_label().to_upper()]
 	status_label.add_theme_color_override("font_color", COLOUR_GOOD if calculation.get("valid", false) else COLOUR_BAD)
 	xp_label.text = "STARTING XP  %d REMAINING / %d" % [calculation.get("xp_remaining", 0), calculation.get("xp_budget", 600)]
 	xp_label.add_theme_color_override("font_color", COLOUR_GOLD)
@@ -1363,15 +1421,15 @@ func _load_character_from_path(path: String) -> void:
 
 func _toggle_character_completion() -> void:
 	if state.workflow_state == CharacterState.WORKFLOW_CAMPAIGN:
-		action_message = "Campaign-active lifecycle is managed by the future Advance Character workflow."
+		action_message = "Campaign status is managed by the future Advance Character workflow."
 	elif state.workflow_state == CharacterState.WORKFLOW_COMPLETE:
-		action_message = "Character reopened as a draft."
+		action_message = "Character creation is back in progress."
 		state.mark_draft()
-	elif bool(calculation.get("valid", false)):
-		action_message = "Character marked creation complete. Save As to persist this lifecycle state."
+	elif bool(calculation.get("valid", false)) and state.loadout_state == CharacterState.LOADOUT_FINALIZED:
+		action_message = "Character creation is complete. Save As to persist this status."
 		state.mark_creation_complete()
 	else:
-		action_message = "Resolve every character error and choice before marking creation complete."
+		action_message = "Resolve every character error and choice, then prepare and finalize the loadout before completing character creation."
 	_refresh()
 
 

@@ -8,6 +8,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+- Added a focused Create Character loadout workflow with only Starting Equipment, Add Optional Equipment, and Review and Finalize sections.
+- Added plain-language starting-grant recovery and creation-mode defaults for optional equipment: character custody, Common craftsmanship, and carried location.
+- Added regression coverage for the simplified creation mode, retained Manage Loadout maintenance controls, creation finalization, and the 960x650 minimum window.
+- Added a shared Character Inventory editor to Create Character and a new standalone Manage Loadout landing workflow.
+- Added durable owned-item instances with safe stack splitting, quantity, craftsmanship, origin, equipped/carried/stored location, character/Comrade/squad custody, and short notes.
+- Added idempotent starting-loadout materialization, changed-creation grant rebuilding, durable issued-item reconciliation, explicit loadout finalization, minimal structured Comrade identity, and append-only inventory audit events.
+- Added searchable supported-equipment selection, carried ammunition quantities in catalogue units, armour AP by body location, and Core carrying-capacity calculations.
+- Added partial-weight reporting for genuinely missing catalogue definitions; valid catalogue definitions with no printed source weight count as `0 kg`.
+- Added character inventory service, calculator, UI, migration, interoperability, responsive-layout, and printable-loadout regression tests.
+- Added provenance-aware starting-grant signatures and protected grant-owned stacks so later equipment survives creation-input rebuilds.
+- Added strict v4 integer, craftsmanship, timestamp, snapshot, lifecycle, and quantity-one weapon/armour validation at load and save boundaries.
+- Added idempotent no-op inventory edits, named Comrade dossier output, and automatic loadout-continuation pages for large inventories.
+
 - Added a single versioned Core equipment catalogue with 115 immutable weapon, ammunition, armour, wargear, upgrade, and explicit placeholder definitions.
 - Added complete weapon-profile fields for the currently supported catalogue slice: class, range, rate of fire, Damage, Penetration, magazine capacity, Reload, weight, Availability, qualities, and ammunition links where applicable.
 - Added a read-only Armoury browser with text search, category and Availability filters, live profile details, stable IDs, and printed source-page references.
@@ -32,12 +45,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- Create Character now shows only item names and meaningful quantities, omits the selected-item detail panel, and retains Search, filters, Add Equipment, and Remove; Manage Loadout and Armoury remain detailed.
+- Create Character now lets players prepare calculated starting grants with **Prepare Starting Equipment**, then automatically reconciles intact prepared grants; it also groups loadout items as Weapons, Armour, Ammunition, and Gear, and keeps profiles, armour, carried weight, and the Finalize Loadout and Continue to Review action visible without exposing maintenance controls.
+- Manage Loadout retains custody, provenance, reconciliation, audit-history, and other detailed maintenance controls outside the player-focused creation flow.
+- Character saves now use envelope/state version 4 and public interoperability schema `1.3.0`, with v1-v3 migration to an unprepared draft loadout.
+- The landing page now uses a responsive four-workflow layout and the application version is `0.7.1-dev`.
+- Character dossiers now print the owned loadout, custody/location context, known carried weight, and armour by location instead of only the calculated starting-equipment preview.
+
 - Regiment and character starting packages now resolve equipment through the same shared catalogue instead of maintaining duplicate local definition maps.
 - The landing page now includes a responsive third Armoury workflow and the displayed application version is `0.6.0-dev`.
 - The public interoperability schema is now `1.2.0`; older compatible major-version files remain supported and receive a migration note when equipment metadata is absent.
 - Regiment saves now use envelope/state version 2, character saves use envelope/state version 3, and both remain compatible with their earlier supported versions.
 - The advancement rules content version is now `0.5.0-core-talents`.
 - OWCA now displays specialist and variable-cost Talents it cannot safely purchase instead of omitting them from the catalogue.
+
+### Fixed
+
+- Valid catalogue definitions with no printed weight now count as `0 kg`; only missing definitions remain unresolved and block loadout finalization.
 
 ### Known limitations
 

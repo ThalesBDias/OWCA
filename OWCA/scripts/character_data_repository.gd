@@ -9,18 +9,20 @@ extends RefCounted
 
 const DEFAULT_DATA_PATH := "res://OWCA/data/guardsman_specialities.json"
 const DEFAULT_ADVANCEMENT_PATH := "res://OWCA/data/guardsman_advancements.json"
+const InventoryRulesRepositoryScript = preload("res://OWCA/scripts/inventory_rules_repository.gd")
 
 var data: Dictionary = {}
 var advancement_data: Dictionary = {}
 var last_error: String = ""
 var equipment_repository := EquipmentDataRepository.new()
+var inventory_rules_repository: RefCounted = InventoryRulesRepositoryScript.new()
 var _specialities_by_id: Dictionary = {}
 var _choices_by_id: Dictionary = {}
 
 
 ## Replaces every in-memory index only after both JSON documents parse and pass
 ## structural validation. `last_error` contains a player/developer-facing cause.
-func load_data(path: String = DEFAULT_DATA_PATH, advancement_path: String = DEFAULT_ADVANCEMENT_PATH, equipment_path: String = EquipmentDataRepository.DEFAULT_DATA_PATH) -> Error:
+func load_data(path: String = DEFAULT_DATA_PATH, advancement_path: String = DEFAULT_ADVANCEMENT_PATH, equipment_path: String = EquipmentDataRepository.DEFAULT_DATA_PATH, inventory_rules_path: String = "res://OWCA/data/inventory_rules.json") -> Error:
 	last_error = ""
 	_specialities_by_id.clear()
 	_choices_by_id.clear()
@@ -29,6 +31,10 @@ func load_data(path: String = DEFAULT_DATA_PATH, advancement_path: String = DEFA
 	if equipment_error != OK:
 		last_error = equipment_repository.last_error
 		return equipment_error
+	var inventory_error := int(inventory_rules_repository.call("load_data", inventory_rules_path))
+	if inventory_error != OK:
+		last_error = str(inventory_rules_repository.get("last_error"))
+		return inventory_error
 
 	var file := FileAccess.open(path, FileAccess.READ)
 	if file == null:

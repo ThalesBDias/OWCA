@@ -41,8 +41,10 @@ func _draw() -> void:
 	_draw_outer_frame()
 	if page_number == 1:
 		_draw_page_one()
-	else:
+	elif page_number == 2:
 		_draw_page_two()
+	else:
+		_draw_loadout_continuation(page_number - 3)
 	_draw_footer()
 
 
@@ -159,11 +161,10 @@ func _draw_page_one() -> void:
 	_draw_list(talent_lines, Rect2(1270, 1330, 1045, 850), 29, 39)
 
 	var equipment_panel := Rect2(130, 2245, 2220, 500)
-	_draw_panel(equipment_panel, "STANDARD EQUIPMENT", "5")
-	var equipment_lines: Array[String] = []
-	for item: Dictionary in calculation.get("equipment", []):
-		equipment_lines.append("%dx %s" % [item.get("quantity", 1), item.get("name", "Item")])
-	_draw_multicolumn_list(equipment_lines, Rect2(165, 2340, 2150, 360), 3, 27, 37)
+	_draw_panel(equipment_panel, "OWNED LOADOUT, ARMOUR AND ENCUMBRANCE", "5")
+	var equipment_lines := build_loadout_lines(calculation, _comrade_name())
+	var loadout_pages := layout_wrapped_pages(equipment_lines, 2150.0 / 3.0, 3, 26, 10, 76)
+	_draw_wrapped_column_layout(loadout_pages[0] as Array, Rect2(165, 2340, 2150, 360), 26, 34)
 
 	var tracker_panel := Rect2(130, 2768, 1085, 430)
 	_draw_panel(tracker_panel, "TABLETOP TRACKERS", "6")
@@ -236,6 +237,17 @@ func _draw_page_two() -> void:
 		var y := 2110.0 + row * 126.0
 		draw_rect(Rect2(175, y, 580, 102), INK_MUTED, false, 2.0)
 		draw_rect(Rect2(780, y, 1515, 102), INK_MUTED, false, 2.0)
+
+
+func _draw_loadout_continuation(continuation_index: int) -> void:
+	_draw_header("Owned Loadout Continuation")
+	var panel := Rect2(130, 352, 2220, 2846)
+	_draw_panel(panel, "OWNED LOADOUT - CONTINUED", "L")
+	var lines := build_loadout_lines(calculation, _comrade_name())
+	var pages := layout_wrapped_pages(lines, 2150.0 / 3.0, 3, 26, 10, 76)
+	var layout_index := continuation_index + 1
+	if layout_index < pages.size():
+		_draw_wrapped_column_layout(pages[layout_index] as Array, Rect2(165, 448, 2150, 2660), 26, 34)
 
 
 func _draw_panel(rect: Rect2, title: String, number: String) -> void:
@@ -311,6 +323,88 @@ func _draw_multicolumn_list(items: Array[String], rect: Rect2, columns: int, fon
 		_draw_text("- %s" % items[index], position, font_size, INK, column_width - 24)
 
 
+func _draw_wrapped_multicolumn_list(items: Array[String], rect: Rect2, columns: int, font_size: int, line_height: float) -> void:
+	var column_width := rect.size.x / float(columns)
+	var max_rows := floori(rect.size.y / line_height)
+	var layout := layout_wrapped_columns(items, column_width, columns, font_size, max_rows)
+	_draw_wrapped_column_layout(layout, rect, font_size, line_height)
+
+
+func _draw_wrapped_column_layout(layout: Array, rect: Rect2, font_size: int, line_height: float) -> void:
+	var column_width := rect.size.x / float(maxi(1, layout.size()))
+	for column_index in layout.size():
+		var lines := layout[column_index] as Array
+		for row_index in lines.size():
+			var position := Vector2(rect.position.x + column_index * column_width, rect.position.y + (row_index + 0.8) * line_height)
+			_draw_text(str(lines[row_index]), position, font_size, INK, column_width - 24)
+
+
+## Produces the exact line layout used by the printable loadout panel. Keeping
+## this projection deterministic lets regression tests catch clipped records.
+func layout_wrapped_columns(items: Array[String], column_width: float, columns: int, font_size: int, max_rows: int) -> Array:
+	var pages := layout_wrapped_pages(items, column_width, columns, font_size, max_rows, max_rows)
+	return pages[0] if not pages.is_empty() else []
+
+
+## Paginates every wrapped loadout line. The first page uses the compact
+## primary-sheet panel; continuation pages use a full printable panel.
+func layout_wrapped_pages(items: Array[String], column_width: float, columns: int, font_size: int, first_max_rows: int, continuation_max_rows: int) -> Array:
+	if font == null:
+		font = ThemeDB.fallback_font
+	var groups: Array[Array] = []
+	for item in items:
+		var wrapped: Array[String] = _wrap_text("- %s" % item, column_width - 24.0, font_size)
+		for index in range(1, wrapped.size()):
+			wrapped[index] = "  %s" % wrapped[index]
+		groups.append(wrapped)
+	if groups.is_empty():
+		groups.append(["-"])
+	var pages: Array = [_empty_columns(columns)]
+	var page_index := 0
+	var column_index := 0
+	for group: Array in groups:
+		var pending := group.duplicate()
+		while not pending.is_empty():
+			var max_rows := first_max_rows if page_index == 0 else continuation_max_rows
+			var column := (pages[page_index] as Array)[column_index] as Array
+			var remaining := max_rows - column.size()
+			if remaining <= 0 or (pending.size() > remaining and not column.is_empty()):
+				column_index += 1
+				if column_index >= columns:
+					pages.append(_empty_columns(columns))
+					page_index += 1
+					column_index = 0
+				continue
+			var take := mini(remaining, pending.size())
+			for _line_index in take:
+				column.append(pending.pop_front())
+	return pages
+
+
+func _empty_columns(columns: int) -> Array:
+	var output: Array = []
+	for _column in columns:
+		output.append([])
+	return output
+
+
+func _columns_from_visual_lines(visual_lines: Array[String], columns: int, max_rows: int) -> Array:
+	var output: Array = []
+	for _column in columns:
+		output.append([])
+	var rows := mini(max_rows, ceili(float(visual_lines.size()) / float(columns)))
+	for index in visual_lines.size():
+		var column := mini(columns - 1, index / rows)
+		(output[column] as Array).append(visual_lines[index])
+	return output
+
+
+func get_required_page_count(result: Dictionary, comrade_name: String = "") -> int:
+	font = ThemeDB.fallback_font if font == null else font
+	var pages := layout_wrapped_pages(build_loadout_lines(result, comrade_name), 2150.0 / 3.0, 3, 26, 10, 76)
+	return 2 + maxi(0, pages.size() - 1)
+
+
 func _draw_tracker(label: String, maximum: int, position: Vector2, box_count: int) -> void:
 	_draw_text("%s  MAX %s" % [label, str(maximum) if maximum > 0 else "___"], position, 27, INK)
 	for index in box_count:
@@ -328,6 +422,32 @@ func _draw_writing_lines(rect: Rect2, count: int) -> void:
 func _draw_empty_value_box(rect: Rect2) -> void:
 	draw_rect(rect, Color(PARCHMENT_DARK, 0.25), true)
 	draw_rect(rect, INK, false, 3.0)
+
+
+## Returns the concise printable projection. Inventory history intentionally
+## remains in JSON/UI so the field sheet stays useful at the table.
+func build_loadout_lines(result: Dictionary, comrade_name: String = "") -> Array[String]:
+	var lines: Array[String] = []
+	if not comrade_name.strip_edges().is_empty():
+		lines.append("Comrade: %s" % comrade_name.strip_edges())
+	for item: Dictionary in result.get("equipment", []):
+		var custodian := item.get("custodian", {}) as Dictionary
+		var owner := str(custodian.get("type", "character"))
+		var owner_label := comrade_name.strip_edges() if owner == "comrade" and not comrade_name.strip_edges().is_empty() else owner.capitalize()
+		var context := str(item.get("location", "carried")).capitalize() if owner == "character" else "%s / %s" % [owner_label, str(item.get("location", "carried")).capitalize()]
+		lines.append("%dx %s [%s]" % [item.get("quantity", 1), item.get("name", item.get("definition_id", "Item")), context])
+	var inventory := result.get("inventory", {}) as Dictionary
+	var encumbrance := inventory.get("encumbrance", {}) as Dictionary
+	if not encumbrance.is_empty():
+		lines.append("Weight: %.2f / %.2f kg [%s]" % [float(encumbrance.get("known_weight_kg", 0.0)), float(encumbrance.get("carrying_limit_kg", 0.0)), str(encumbrance.get("status", "partial")).replace("_", " ")])
+	var armour := inventory.get("armour_by_location", {}) as Dictionary
+	if not armour.is_empty():
+		lines.append("Armour: Head %d | Arms %d | Body %d | Legs %d" % [int((armour.get("Head", {}) as Dictionary).get("ap", 0)), int((armour.get("Arms", {}) as Dictionary).get("ap", 0)), int((armour.get("Body", {}) as Dictionary).get("ap", 0)), int((armour.get("Legs", {}) as Dictionary).get("ap", 0))])
+	return lines
+
+
+func _comrade_name() -> String:
+	return str(character_state.comrade.get("name", "")) if character_state != null else ""
 
 
 func _draw_footer() -> void:
