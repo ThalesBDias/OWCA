@@ -371,7 +371,8 @@ func _build_starting_grant_reconciliation() -> void:
 
 func _build_catalogue_add_controls(parent: VBoxContainer, add_button_label: String = "ADD TO CHARACTER") -> void:
 	parent.add_child(_heading("ADD SUPPORTED EQUIPMENT"))
-	var filters := HBoxContainer.new()
+	var filters: Container = VBoxContainer.new() if presentation_mode == MODE_CREATION else HBoxContainer.new()
+	filters.add_theme_constant_override("separation", 6)
 	catalogue_search = LineEdit.new()
 	catalogue_search.placeholder_text = "Search equipment name, ID, family, class, or quality..."
 	catalogue_search.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -384,7 +385,8 @@ func _build_catalogue_add_controls(parent: VBoxContainer, add_button_label: Stri
 	category_filter.item_selected.connect(func(_index: int) -> void: _refresh_catalogue_matches())
 	filters.add_child(category_filter)
 	parent.add_child(filters)
-	var add_row := HBoxContainer.new()
+	var add_row: Container = VBoxContainer.new() if presentation_mode == MODE_CREATION else HBoxContainer.new()
+	add_row.add_theme_constant_override("separation", 6)
 	catalogue_selector = OptionButton.new()
 	catalogue_selector.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	catalogue_selector.item_selected.connect(func(_index: int) -> void: _render_catalogue_details())

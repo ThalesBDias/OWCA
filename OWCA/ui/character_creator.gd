@@ -251,7 +251,8 @@ func _build_workspace() -> Control:
 func _apply_responsive_layout() -> void:
 	if navigation_panel == null or content_panel == null or summary_panel == null:
 		return
-	var window_width := size.x
+	var window := get_window()
+	var window_width := float(window.size.x) if window != null and window.size.x > 0 else size.x
 	if window_width < 1100.0:
 		navigation_panel.custom_minimum_size.x = 170
 		content_panel.custom_minimum_size.x = 0

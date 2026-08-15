@@ -50,6 +50,19 @@ func _run() -> void:
 	creator.set("calculation", finalization_calculation)
 	creator.call("_select_stage", "loadout")
 	await process_frame
+	for test_size in [Vector2i(960, 650), Vector2i(1280, 800)]:
+		root.size = test_size
+		await process_frame
+		creator.call("_apply_responsive_layout")
+		creator.call("_render_active_stage")
+		await process_frame
+		_assert_loadout_surface_fits(creator, test_size)
+
+	root.size = Vector2i(960, 650)
+	await process_frame
+	creator.call("_apply_responsive_layout")
+	creator.call("_render_active_stage")
+	await process_frame
 	_assert_creation_finalize_fits(creator)
 
 	creator.set("state", CharacterState.new())
@@ -107,6 +120,35 @@ func _assert_loadout_stage_navigation_fits(creator: Control, test_size: Vector2i
 	var status_label := creator.get("status_label") as Label
 	_assert_true(loadout_button != null, "Loadout stage navigation exists at %s" % test_size)
 	_assert_true(status_label != null and loadout_button.get_global_rect().end.y < status_label.get_global_rect().position.y, "Loadout stage remains above the bottom status panel at %s" % test_size)
+
+
+func _assert_loadout_surface_fits(creator: Control, test_size: Vector2i) -> void:
+	var summary_panel := creator.get("summary_panel") as Control
+	var content_panel := creator.get("content_panel") as Control
+	var stage_content := creator.get("stage_content") as Control
+	_assert_true(summary_panel != null and summary_panel.visible == (test_size.x >= 1100), "live summary visibility follows the actual window width at %s" % test_size)
+	_assert_true(content_panel != null and stage_content != null, "Loadout content exists at %s" % test_size)
+	if content_panel != null:
+		_assert_true(content_panel.get_global_rect().end.x <= creator.size.x + 1.0, "Loadout content panel ends inside the logical canvas at %s" % test_size)
+	if content_panel != null and stage_content != null:
+		_assert_true(stage_content.get_global_rect().end.x <= content_panel.get_global_rect().end.x + 1.0, "Loadout stage content ends inside its panel at %s" % test_size)
+	if content_panel != null and stage_content != null:
+		var optional_section := _find_named(stage_content, "CreationOptionalEquipment")
+		var editor := optional_section.get_parent() as VBoxContainer if optional_section != null else null
+		var catalogue_search := editor.get("catalogue_search") as LineEdit if editor != null else null
+		var category_filter := editor.get("category_filter") as OptionButton if editor != null else null
+		var catalogue_selector := editor.get("catalogue_selector") as OptionButton if editor != null else null
+		var add_button := _find_button(optional_section, "ADD EQUIPMENT")
+		_assert_true(catalogue_search != null and category_filter != null and catalogue_selector != null and add_button != null, "creation catalogue controls exist at %s" % test_size)
+		if catalogue_search != null and category_filter != null and catalogue_selector != null and add_button != null:
+			for control in [catalogue_search, category_filter, catalogue_selector, add_button]:
+				_assert_true(control.get_global_rect().position.x >= content_panel.get_global_rect().position.x - 1.0 and control.get_global_rect().end.x <= content_panel.get_global_rect().end.x + 1.0, "%s fits the creation content panel at %s" % [control.name, test_size])
+			_assert_true(category_filter.get_global_rect().position.y >= catalogue_search.get_global_rect().end.y - 0.5, "creation category stacks below search at %s" % test_size)
+			_assert_true(catalogue_selector.get_global_rect().position.y >= category_filter.get_global_rect().end.y - 0.5, "creation selector stacks below category at %s" % test_size)
+			_assert_true(add_button.get_global_rect().position.y >= catalogue_selector.get_global_rect().end.y - 0.5, "creation add action stacks below selector at %s" % test_size)
+	for label in ["HOME", "REGIMENT", "SAVE AS", "LOAD"]:
+		var action := _find_button(creator, label)
+		_assert_true(action != null and action.get_global_rect().end.x <= creator.size.x + 1.0, "%s header action ends inside the logical canvas at %s" % [label, test_size])
 
 
 func _assert_creation_finalize_fits(creator: Control) -> void:

@@ -73,8 +73,16 @@ func _run() -> void:
 	_assert_true(_find_named(maintenance_editor, "StartingGrantReconciliation") != null, "starting grants expose explicit reconciliation controls")
 	_assert_true(_find_button(maintenance_editor, "SPLIT ONE") != null, "stackable equipment exposes a safe split action")
 	var catalogue_search := maintenance_editor.get("catalogue_search") as LineEdit
+	var maintenance_category := maintenance_editor.get("category_filter") as OptionButton
+	var maintenance_selector := maintenance_editor.get("catalogue_selector") as OptionButton
+	var maintenance_add := _find_button(maintenance_editor, "ADD TO CHARACTER")
 	var catalogue_details := maintenance_editor.get("catalogue_details") as RichTextLabel
 	_assert_true(catalogue_search != null and catalogue_details != null, "catalogue exposes searchable item details")
+	_assert_true(maintenance_category != null and maintenance_selector != null and maintenance_add != null, "maintenance catalogue retains its filter and add controls")
+	if catalogue_search != null and maintenance_category != null:
+		_assert_true(is_equal_approx(catalogue_search.get_global_rect().position.y, maintenance_category.get_global_rect().position.y), "maintenance search and category remain in one horizontal row")
+	if maintenance_selector != null and maintenance_add != null:
+		_assert_true(is_equal_approx(maintenance_selector.get_global_rect().position.y, maintenance_add.get_global_rect().position.y), "maintenance selector and add action remain in one horizontal row")
 	if catalogue_search != null and catalogue_details != null:
 		catalogue_search.text = "m36 lasgun"
 		catalogue_search.text_changed.emit(catalogue_search.text)
@@ -292,7 +300,16 @@ func _run() -> void:
 	await process_frame
 	var optional_section := _find_named(optional_editor, "CreationOptionalEquipment")
 	var starting_section := _find_named(optional_editor, "CreationStartingEquipment")
-	_assert_true(_find_button(optional_editor, "ADD EQUIPMENT") != null, "creation add action uses concise player-facing text")
+	var creation_category := optional_editor.get("category_filter") as OptionButton
+	var creation_selector := optional_editor.get("catalogue_selector") as OptionButton
+	var creation_search := optional_editor.get("catalogue_search") as LineEdit
+	var creation_add := _find_button(optional_editor, "ADD EQUIPMENT")
+	_assert_true(creation_add != null, "creation add action uses concise player-facing text")
+	_assert_true(creation_search != null and creation_category != null and creation_selector != null, "creation catalogue exposes the narrow-flow controls")
+	if creation_search != null and creation_category != null and creation_selector != null and creation_add != null:
+		_assert_true(creation_category.get_global_rect().position.y >= creation_search.get_global_rect().end.y - 0.5, "creation category stacks below search in a narrow panel")
+		_assert_true(creation_selector.get_global_rect().position.y >= creation_category.get_global_rect().end.y - 0.5, "creation selector stacks below category in a narrow panel")
+		_assert_true(creation_add.get_global_rect().position.y >= creation_selector.get_global_rect().end.y - 0.5, "creation add action stacks below selector in a narrow panel")
 	var optional_remove := _find_named(optional_section, "CreationOptionalRemoveButton") as Button
 	_assert_true(optional_remove != null, "creation optional additions expose a remove action")
 	_assert_true(_find_text_contains(optional_section, "Basic | Damage 1d10+3 E | Pen") != null, "creation optional M36 card preserves the concise weapon profile")
