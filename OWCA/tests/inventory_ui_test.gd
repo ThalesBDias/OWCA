@@ -29,7 +29,7 @@ func _run() -> void:
 	creator.call("_select_stage", "loadout")
 	await process_frame
 	var content := creator.get("stage_content") as Node
-	_assert_true(_find_button(content, "PREPARE STARTING LOADOUT") != null, "character creation has a loadout preparation action")
+	_assert_true(_find_button(content, "PREPARE STARTING EQUIPMENT") != null, "character creation has a loadout preparation action")
 	creator.queue_free()
 	await process_frame
 
@@ -96,6 +96,50 @@ func _run() -> void:
 		_assert_true(prepare_starting_equipment.text == "PREPARE STARTING EQUIPMENT", "creation preparation action uses player-facing text")
 	_assert_true(_find_named(unprepared_editor, "StartingGrantReconciliation") == null, "unprepared creation hides reconciliation controls")
 	unprepared_editor.queue_free()
+	await process_frame
+
+	# This fixture deliberately supplies a valid character result while retaining
+	# the calculator's real inventory projection and matching starting grants.
+	var finalization_state := CharacterState.new()
+	finalization_state.comrade = { "id": DocumentIdentity.generate(), "name": "Trooper Hale of the Thirty-Seventh Varanox Reserve" }
+	inventory_service.materialize_starting_loadout(finalization_state, starting_grants, repository.equipment_repository, "2026-08-15T12:10:00Z")
+	var finalization_calculation := CharacterCalculator.new().calculate(finalization_state, regiment_repository, repository)
+	finalization_calculation["valid"] = true
+	finalization_calculation["errors"] = []
+	finalization_calculation["unresolved_choices"] = []
+	finalization_calculation["starting_equipment"] = starting_grants.duplicate(true)
+	var finalization_editor := editor_script.new() as VBoxContainer
+	root.add_child(finalization_editor)
+	finalization_editor.call("configure", finalization_state, finalization_calculation, repository, &"creation")
+	await process_frame
+	var finalize := _find_named(finalization_editor, "FinalizeAndContinueButton") as Button
+	_assert_true(finalize != null, "creation mode exposes one finalization action")
+	if finalize != null:
+		_assert_equal(finalize.text, "FINALIZE LOADOUT AND CONTINUE TO REVIEW", "primary action states its outcome")
+	_assert_true(_find_text_contains(finalization_editor, "Carried weight") != null, "creation review shows carried weight")
+	_assert_true(_find_text_contains(finalization_editor, "Head AP") != null, "creation review shows armour by location")
+	_assert_true(_find_text_contains(finalization_editor, "unprepared") == null, "creation mode hides raw unprepared state")
+	_assert_true(_find_text_contains(finalization_editor, "reconciliation") == null, "creation mode hides reconciliation terminology")
+	var completion_messages: Array[String] = []
+	finalization_editor.connect("creation_finished", func(message: String) -> void: completion_messages.append(message))
+	if finalize != null:
+		finalize.pressed.emit()
+		await process_frame
+	_assert_true(not completion_messages.is_empty(), "creation finalization emits its completion signal")
+	_assert_equal(finalization_state.loadout_state, CharacterState.LOADOUT_FINALIZED, "creation finalization updates the loadout state")
+	finalization_editor.queue_free()
+	await process_frame
+
+	var transition_creator := creator_scene.instantiate() as Control
+	root.add_child(transition_creator)
+	await process_frame
+	transition_creator.call("_on_creation_loadout_finished", "Loadout finalized.")
+	await process_frame
+	_assert_equal(transition_creator.get("active_stage"), "review", "creation completion moves directly to Review")
+	var transition_stage_buttons := transition_creator.get("stage_buttons") as Dictionary
+	var review_stage := transition_stage_buttons.get("review") as Button
+	_assert_true(review_stage != null and review_stage.button_pressed, "creation completion presses the Review stage")
+	transition_creator.queue_free()
 	await process_frame
 
 	var creation_editor := editor_script.new() as VBoxContainer

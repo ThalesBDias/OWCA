@@ -383,9 +383,21 @@ func _render_stage_buttons() -> void:
 	(stage_buttons["choices"] as Button).text = "Character Choices\n%d/%d resolved" % [mini(resolved, total_choices), total_choices]
 	(stage_buttons["derived"] as Button).text = "Wounds, Fate & Movement\n%d/2 rolls entered" % derived_count
 	(stage_buttons["xp"] as Button).text = "Spend Starting XP\n%d purchase(s) | %d XP left" % [state.purchased_advances.size(), int(calculation.get("xp_remaining", 0))]
-	(stage_buttons["loadout"] as Button).text = "Loadout\n%s | %d item row(s)" % [state.loadout_state, state.owned_items.size()]
+	(stage_buttons["loadout"] as Button).text = "Loadout\n%s | %d item row(s)" % [_loadout_status_label(), state.owned_items.size()]
 	var review_ready := bool(calculation.get("valid", false)) and state.loadout_state == CharacterState.LOADOUT_FINALIZED
 	(stage_buttons["review"] as Button).text = "Review\n%s" % ("ready" if review_ready else ("loadout pending" if calculation.get("valid", false) else "incomplete"))
+
+
+func _loadout_status_label() -> String:
+	match state.loadout_state:
+		CharacterState.LOADOUT_UNPREPARED:
+			return "starting gear not prepared"
+		CharacterState.LOADOUT_DRAFT:
+			return "ready to finalize"
+		CharacterState.LOADOUT_FINALIZED:
+			return "finalized"
+		_:
+			return "needs attention"
 
 
 func _render_active_stage() -> void:
@@ -415,12 +427,20 @@ func _render_active_stage() -> void:
 func _render_loadout_stage() -> void:
 	var editor: VBoxContainer = InventoryEditorScript.new()
 	editor.inventory_changed.connect(_on_inventory_changed)
+	editor.creation_finished.connect(_on_creation_loadout_finished)
 	stage_content.add_child(editor)
-	editor.call("configure", state, calculation, character_repository)
+	editor.call("configure", state, calculation, character_repository, &"creation")
 
 
 func _on_inventory_changed(message: String) -> void:
 	action_message = message
+	_refresh()
+
+
+func _on_creation_loadout_finished(message: String) -> void:
+	action_message = message
+	active_stage = "review"
+	(stage_buttons[active_stage] as Button).button_pressed = true
 	_refresh()
 
 
@@ -1005,7 +1025,7 @@ func _render_summary() -> void:
 	lines.append("[font_size=20][color=#d5b35b]%s[/color][/font_size]" % _escape_bbcode(state.character_name))
 	lines.append("[color=#a5ad9d]Player:[/color] %s" % _escape_bbcode(state.player_name if not state.player_name.is_empty() else "-"))
 	lines.append("[color=#a5ad9d]Record:[/color] %s  |  [color=#a5ad9d]Lifecycle:[/color] %s" % [state.document_id.left(8), state.workflow_state])
-	lines.append("[color=#a5ad9d]Loadout:[/color] %s  |  [color=#a5ad9d]Comrade:[/color] %s" % [state.loadout_state, _escape_bbcode(str(state.comrade.get("name", "-")))])
+	lines.append("[color=#a5ad9d]Loadout:[/color] %s  |  [color=#a5ad9d]Comrade:[/color] %s" % [_loadout_status_label(), _escape_bbcode(str(state.comrade.get("name", "-")))])
 	lines.append("[color=#a5ad9d]Regiment:[/color] %s" % _escape_bbcode(str(calculation.get("regiment_name", "No regiment loaded"))))
 	lines.append("[color=#a5ad9d]Speciality:[/color] %s" % _escape_bbcode(str(calculation.get("speciality_name", "-"))))
 	lines.append("")

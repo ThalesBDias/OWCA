@@ -6,6 +6,7 @@ extends VBoxContainer
 ## names, profiles, armour, and weight remain calculated projections.
 
 signal inventory_changed(message: String)
+signal creation_finished(message: String)
 
 const InventoryServiceScript = preload("res://OWCA/scripts/character_inventory_service.gd")
 const MODE_CREATION: StringName = &"creation"
@@ -52,7 +53,57 @@ func _rebuild_creation() -> void:
 	var optional_equipment := _named_section("CreationOptionalEquipment", "ADD OPTIONAL EQUIPMENT")
 	add_child(optional_equipment)
 	_build_creation_optional_equipment(optional_equipment)
-	add_child(_named_section("CreationReviewFinalize", "REVIEW AND FINALIZE"))
+	var review := _named_section("CreationReviewFinalize", "REVIEW AND FINALIZE")
+	add_child(review)
+	_build_creation_review(review)
+
+
+func _build_creation_review(parent: VBoxContainer) -> void:
+	var inventory := calculation.get("inventory", {}) as Dictionary
+	var encumbrance := inventory.get("encumbrance", {}) as Dictionary
+	var encumbrance_status := "Weight partially known"
+	match str(encumbrance.get("status", "partial")):
+		"within_limit":
+			encumbrance_status = "Within carrying limit"
+		"encumbered":
+			encumbrance_status = "Encumbered"
+		"over_lift_limit":
+			encumbrance_status = "Over lifting limit"
+	parent.add_child(_label("Carried weight: %.2f / %.2f kg (%s)" % [
+		float(encumbrance.get("known_weight_kg", 0.0)),
+		float(encumbrance.get("carrying_limit_kg", 0.0)),
+		encumbrance_status
+	]))
+	var armour := inventory.get("armour_by_location", {}) as Dictionary
+	var armour_parts: Array[String] = []
+	for location in ["Head", "Arms", "Body", "Legs"]:
+		armour_parts.append("%s AP %d" % [location, int((armour.get(location, {}) as Dictionary).get("ap", 0))])
+	parent.add_child(_label("  |  ".join(armour_parts)))
+	var blocking_message := _creation_blocking_message()
+	if not blocking_message.is_empty():
+		parent.add_child(_label(blocking_message))
+	var finalize := Button.new()
+	finalize.name = "FinalizeAndContinueButton"
+	finalize.text = "CONTINUE TO REVIEW" if state.loadout_state == CharacterState.LOADOUT_FINALIZED else "FINALIZE LOADOUT AND CONTINUE TO REVIEW"
+	finalize.custom_minimum_size.y = 44
+	finalize.disabled = not blocking_message.is_empty()
+	finalize.pressed.connect(_finalize_and_continue)
+	parent.add_child(finalize)
+
+
+func _creation_blocking_message() -> String:
+	if state.loadout_state == CharacterState.LOADOUT_FINALIZED:
+		return ""
+	if state.loadout_state == CharacterState.LOADOUT_UNPREPARED:
+		return "Prepare your calculated starting equipment before continuing."
+	var inventory := calculation.get("inventory", {}) as Dictionary
+	if not (inventory.get("unresolved_items", []) as Array).is_empty():
+		return "One owned item is no longer available in the equipment catalogue."
+	if not bool(inventory_service.call("starting_loadout_matches", state, calculation.get("starting_equipment", []) as Array)):
+		return "Starting equipment changed after an earlier character choice. Restore it before finalizing."
+	if not bool(calculation.get("valid", false)):
+		return "Resolve the remaining character choices before finalizing this loadout."
+	return ""
 
 
 func _build_creation_starting_equipment(parent: VBoxContainer) -> void:
@@ -540,6 +591,22 @@ func _prepare_starting_loadout() -> void:
 func _finalize_loadout() -> void:
 	var result: Dictionary = inventory_service.call("finalize_loadout", state, character_repository.equipment_repository, calculation.get("starting_equipment", []) as Array)
 	_emit_result(result)
+
+
+func _finalize_and_continue() -> void:
+	if state.loadout_state == CharacterState.LOADOUT_FINALIZED:
+		creation_finished.emit("Loadout is ready for review.")
+		return
+	var result: Dictionary = inventory_service.call(
+		"finalize_loadout",
+		state,
+		character_repository.equipment_repository,
+		calculation.get("starting_equipment", []) as Array
+	)
+	if int(result.get("error", ERR_INVALID_DATA)) == OK:
+		creation_finished.emit(str(result.get("message", "Loadout finalized.")))
+	else:
+		_emit_result(result)
 
 
 func _rebuild_starting_loadout() -> void:
