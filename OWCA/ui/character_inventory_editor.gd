@@ -99,10 +99,13 @@ func _creation_blocking_message() -> String:
 	var inventory := calculation.get("inventory", {}) as Dictionary
 	if not (inventory.get("unresolved_items", []) as Array).is_empty():
 		return "One owned item is no longer available in the equipment catalogue."
-	if not bool(inventory_service.call("starting_loadout_matches", state, calculation.get("starting_equipment", []) as Array)):
-		return "Starting equipment changed after an earlier character choice. Restore it before finalizing."
 	if not bool(calculation.get("valid", false)):
 		return "Resolve the remaining character choices before finalizing this loadout."
+	var expected_grants := calculation.get("starting_equipment", []) as Array
+	if expected_grants.is_empty():
+		return "Starting equipment is not ready yet. Review the remaining character choices before continuing."
+	if not bool(inventory_service.call("starting_loadout_matches", state, expected_grants)):
+		return "Starting equipment changed after an earlier character choice. Restore it before finalizing."
 	return ""
 
 
@@ -117,7 +120,14 @@ func _build_creation_starting_equipment(parent: VBoxContainer) -> void:
 		parent.add_child(prepare)
 		return
 	var expected_grants := calculation.get("starting_equipment", []) as Array
-	if not bool(inventory_service.call("starting_loadout_matches", state, expected_grants)):
+	if expected_grants.is_empty():
+		parent.add_child(_label("Starting equipment is not ready yet. Review the remaining character choices before continuing."))
+		return
+	var grants_match := bool(inventory_service.call("starting_loadout_matches", state, expected_grants))
+	if not bool(calculation.get("valid", false)) and not grants_match:
+		parent.add_child(_label("Resolve the remaining character choices before finalizing this loadout."))
+		return
+	if not grants_match:
 		parent.add_child(_label("Starting equipment changed after an earlier character choice. Restore it before finalizing."))
 		var restore := Button.new()
 		restore.name = "RestoreStartingEquipmentButton"
@@ -244,11 +254,24 @@ func _creation_item_profile(definition: Dictionary) -> String:
 	if not profile.is_empty():
 		var details: Array[String] = []
 		if profile.has("class"):
-			details.append(str(profile.get("class", "")))
+			details.append("Class %s" % profile.get("class", "-"))
+		if profile.has("range_m"):
+			details.append("Range %s m" % _format_profile_number(profile.get("range_m", "-")))
+		elif profile.has("range_text"):
+			details.append("Range %s" % profile.get("range_text", "-"))
+		if profile.has("rate_of_fire"):
+			details.append("RoF %s" % profile.get("rate_of_fire", "-"))
 		if profile.has("damage"):
 			details.append("Damage %s" % profile.get("damage", "-"))
 		if profile.has("penetration"):
-			details.append("Pen %s" % profile.get("penetration", "-"))
+			details.append("Pen %s" % _format_profile_number(profile.get("penetration", "-")))
+		if profile.has("magazine"):
+			details.append("Magazine %s" % _format_profile_number(profile.get("magazine", "-")))
+		if profile.has("reload"):
+			details.append("Reload %s" % profile.get("reload", "-"))
+		var qualities := profile.get("qualities", []) as Array
+		if not qualities.is_empty():
+			details.append("Qualities %s" % ", ".join(qualities))
 		return " | ".join(details)
 	var armour := definition.get("armour", {}) as Dictionary
 	if not armour.is_empty():
@@ -257,6 +280,14 @@ func _creation_item_profile(definition: Dictionary) -> String:
 	if not summary.is_empty():
 		return summary
 	return "%s | %s" % [str(definition.get("category", "equipment")).replace("_", " ").capitalize(), str(definition.get("availability", "Standard issue"))]
+
+
+func _format_profile_number(value: Variant) -> String:
+	if value is float:
+		var numeric := float(value)
+		if is_equal_approx(numeric, round(numeric)):
+			return str(int(numeric))
+	return str(value)
 
 
 func _rebuild_maintenance() -> void:
@@ -514,6 +545,7 @@ func _build_item_row(owned: Dictionary, resolved: Dictionary) -> Control:
 			location.select(location.item_count - 1)
 	controls.add_child(location)
 	var custodian := OptionButton.new()
+	custodian.name = "CustodianSelector"
 	for pair in [["Character", "character", ""], ["Squad", "squad", ""]]:
 		custodian.add_item(str(pair[0]))
 		custodian.set_item_metadata(custodian.item_count - 1, { "type": pair[1], "id": pair[2] })

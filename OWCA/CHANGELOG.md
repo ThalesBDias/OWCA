@@ -46,7 +46,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Changed
 
 - Create Character now lets players prepare calculated starting grants with **Prepare Starting Equipment**, then automatically reconciles intact prepared grants; it also groups loadout items as Weapons, Armour, Ammunition, and Gear, and keeps profiles, armour, carried weight, and the Finalize Loadout and Continue to Review action visible without exposing maintenance controls.
-- Manage Loadout retains custody, provenance, reconciliation, audit-history, instance-identity, and other detailed maintenance controls outside the player-focused creation flow.
+- Manage Loadout retains custody, provenance, reconciliation, audit-history, and other detailed maintenance controls outside the player-focused creation flow.
 - Character saves now use envelope/state version 4 and public interoperability schema `1.3.0`, with v1-v3 migration to an unprepared draft loadout.
 - The landing page now uses a responsive four-workflow layout and the application version is `0.7.1-dev`.
 - Character dossiers now print the owned loadout, custody/location context, known carried weight, and armour by location instead of only the calculated starting-equipment preview.

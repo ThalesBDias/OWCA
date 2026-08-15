@@ -69,9 +69,13 @@ func _run() -> void:
 	await process_frame
 	_assert_true(_find_named(maintenance_editor, "CraftsmanshipSelector") != null, "owned rows expose craftsmanship editing")
 	_assert_true(_find_named(maintenance_editor, "OriginSelector") != null, "owned rows expose origin editing")
+	_assert_true(_find_named(maintenance_editor, "CustodianSelector") != null, "owned rows expose custody editing")
 	_assert_true(_find_named(maintenance_editor, "OwnedCustodianFilter") != null, "owned inventory can be filtered by custodian")
 	_assert_true(_find_named(maintenance_editor, "StartingGrantReconciliation") != null, "starting grants expose explicit reconciliation controls")
 	_assert_true(_find_button(maintenance_editor, "SPLIT ONE") != null, "stackable equipment exposes a safe split action")
+	_assert_true(_find_text(maintenance_editor, "RECENT INVENTORY HISTORY") != null, "maintenance mode exposes recent inventory history")
+	_assert_true(_find_button(maintenance_editor, "APPLY") != null, "maintenance mode exposes an apply action")
+	_assert_true(_find_button(maintenance_editor, "REMOVE") != null, "maintenance mode exposes a remove action")
 	var catalogue_search := maintenance_editor.get("catalogue_search") as LineEdit
 	var maintenance_category := maintenance_editor.get("category_filter") as OptionButton
 	var maintenance_selector := maintenance_editor.get("catalogue_selector") as OptionButton
@@ -218,23 +222,6 @@ func _run() -> void:
 	missing_definition_editor.queue_free()
 	await process_frame
 
-	var mismatch_state := CharacterState.new()
-	inventory_service.materialize_starting_loadout(mismatch_state, starting_grants, repository.equipment_repository, "2026-08-15T12:20:00Z")
-	var mismatch_calculation := CharacterCalculator.new().calculate(mismatch_state, regiment_repository, repository)
-	mismatch_calculation["valid"] = true
-	mismatch_calculation["errors"] = []
-	mismatch_calculation["unresolved_choices"] = []
-	mismatch_calculation["starting_equipment"] = [{ "id": "knife", "quantity": 1, "scope": "per_character" }]
-	var mismatch_editor := editor_script.new() as VBoxContainer
-	root.add_child(mismatch_editor)
-	mismatch_editor.call("configure", mismatch_state, mismatch_calculation, repository, &"creation")
-	await process_frame
-	var mismatch_finalize := _find_named(mismatch_editor, "FinalizeAndContinueButton") as Button
-	_assert_true(_find_text_contains(mismatch_editor, "Starting equipment changed after an earlier character choice. Restore it before finalizing.") != null, "changed starting grants show the restore blocker")
-	_assert_true(mismatch_finalize != null and mismatch_finalize.disabled, "changed starting grants disable creation finalization")
-	mismatch_editor.queue_free()
-	await process_frame
-
 	var invalid_state := CharacterState.new()
 	inventory_service.materialize_starting_loadout(invalid_state, starting_grants, repository.equipment_repository, "2026-08-15T12:25:00Z")
 	var invalid_calculation := CharacterCalculator.new().calculate(invalid_state, regiment_repository, repository)
@@ -252,6 +239,51 @@ func _run() -> void:
 	invalid_editor.queue_free()
 	await process_frame
 
+	var combined_regiment := RegimentState.new()
+	combined_regiment.load_example()
+	var combined_state := CharacterState.new()
+	combined_state.set_regiment(combined_regiment.to_dict(), str(regiment_repository.data.get("content_version", "")))
+	for characteristic in CharacterState.CHARACTERISTIC_ORDER:
+		combined_state.set_base_characteristic(characteristic, 30)
+	combined_state.set_speciality("operator")
+	combined_state.set_wounds_roll(3)
+	combined_state.set_fate_roll(8)
+	combined_state.set_choice("regiment", "hive_characteristic_1", "agility")
+	combined_state.set_choice("regiment", "hive_characteristic_2", "fellowship")
+	combined_state.set_choice("regiment", "hive_urban_violence", "paranoia")
+	combined_state.set_choice("regiment", "close_order_talent", "combat_formation")
+	combined_state.set_choice("speciality", "operator_knowledge_skill", "common_lore_tech")
+	combined_state.set_choice("speciality", "operator_weapon_training", "las")
+	var combined_calculation := CharacterCalculator.new().calculate(combined_state, regiment_repository, repository)
+	_assert_true(bool(combined_calculation.get("valid", false)), "combined mismatch fixture begins with valid character inputs")
+	inventory_service.materialize_starting_loadout(combined_state, combined_calculation.get("starting_equipment", []) as Array, repository.equipment_repository, "2026-08-15T12:27:00Z")
+	var valid_mismatch_calculation := combined_calculation.duplicate(true)
+	valid_mismatch_calculation["starting_equipment"] = [{ "id": "knife", "quantity": 1, "scope": "per_character" }]
+	var valid_mismatch_editor := editor_script.new() as VBoxContainer
+	root.add_child(valid_mismatch_editor)
+	valid_mismatch_editor.call("configure", combined_state, valid_mismatch_calculation, repository, &"creation")
+	await process_frame
+	var valid_mismatch_finalize := _find_named(valid_mismatch_editor, "FinalizeAndContinueButton") as Button
+	_assert_true(_find_named(valid_mismatch_editor, "RestoreStartingEquipmentButton") != null, "valid changed starting grants offer a restore action")
+	_assert_true(_find_text_contains(valid_mismatch_editor, "Starting equipment changed after an earlier character choice. Restore it before finalizing.") != null, "valid changed starting grants show restore guidance")
+	_assert_true(valid_mismatch_finalize != null and valid_mismatch_finalize.disabled, "valid changed starting grants keep finalization blocked until restored")
+	valid_mismatch_editor.queue_free()
+	await process_frame
+	combined_state.set_base_characteristic(CharacterState.CHARACTERISTIC_ORDER[0], 0)
+	combined_calculation = CharacterCalculator.new().calculate(combined_state, regiment_repository, repository)
+	_assert_true(not bool(combined_calculation.get("valid", true)), "clearing a required input invalidates the prepared character")
+	var combined_editor := editor_script.new() as VBoxContainer
+	root.add_child(combined_editor)
+	combined_editor.call("configure", combined_state, combined_calculation, repository, &"creation")
+	await process_frame
+	var combined_finalize := _find_named(combined_editor, "FinalizeAndContinueButton") as Button
+	_assert_true(_find_named(combined_editor, "RestoreStartingEquipmentButton") == null, "invalid character inputs do not expose a dead starting-equipment restore action")
+	_assert_true(_find_text_contains(combined_editor, "Resolve the remaining character choices before finalizing this loadout.") != null, "invalid character inputs show player-facing completion guidance before loadout repair")
+	_assert_true(_find_text_contains(combined_editor, "Current calculated starting grants are not ready to rebuild.") == null, "creation mode hides technical rebuild failures")
+	_assert_true(combined_finalize != null and combined_finalize.disabled, "invalid character inputs keep creation finalization blocked")
+	combined_editor.queue_free()
+	await process_frame
+
 	var creation_editor := editor_script.new() as VBoxContainer
 	root.add_child(creation_editor)
 	creation_editor.call("configure", prepared_state, prepared_calculation, repository, &"creation")
@@ -264,6 +296,7 @@ func _run() -> void:
 	_assert_true(_find_named(creation_editor, "OwnedCustodianFilter") == null, "creation mode hides custody administration")
 	_assert_true(_find_named(creation_editor, "StartingGrantReconciliation") == null, "creation mode hides reconciliation values")
 	_assert_true(_find_text(creation_editor, "RECENT INVENTORY HISTORY") == null, "creation mode hides audit history")
+	_assert_true(_find_text_contains(creation_editor, "Class Pistol | Range 30 m | RoF S/2/- | Damage 1d10+2 E | Pen 0 | Magazine 30 | Reload Half | Qualities Reliable") != null, "prepared starting weapon card shows the complete concise profile")
 	var creation_catalogue_search := creation_editor.get("catalogue_search") as LineEdit
 	var creation_catalogue_details := creation_editor.get("catalogue_details") as RichTextLabel
 	var creation_inventory_messages: Array[String] = []
@@ -312,7 +345,7 @@ func _run() -> void:
 		_assert_true(creation_add.get_global_rect().position.y >= creation_selector.get_global_rect().end.y - 0.5, "creation add action stacks below selector in a narrow panel")
 	var optional_remove := _find_named(optional_section, "CreationOptionalRemoveButton") as Button
 	_assert_true(optional_remove != null, "creation optional additions expose a remove action")
-	_assert_true(_find_text_contains(optional_section, "Basic | Damage 1d10+3 E | Pen") != null, "creation optional M36 card preserves the concise weapon profile")
+	_assert_true(_find_text_contains(optional_section, "Class Basic | Range 100 m | RoF S/3/- | Damage 1d10+3 E | Pen 0 | Magazine 60 | Reload Full | Qualities Reliable") != null, "optional weapon card shows the complete concise profile")
 	if optional_remove != null:
 		var optional_count_before_removal := prepared_state.owned_items.size()
 		optional_remove.pressed.emit()
@@ -325,16 +358,6 @@ func _run() -> void:
 	_assert_interactive_controls_fit_width(optional_editor, 960.0)
 	optional_editor.queue_free()
 	await process_frame
-
-	var mismatched_calculation := prepared_calculation.duplicate(true)
-	mismatched_calculation["starting_equipment"] = [{ "id": "knife", "quantity": 1, "scope": "per_character" }]
-	var mismatched_editor := editor_script.new() as VBoxContainer
-	root.add_child(mismatched_editor)
-	mismatched_editor.call("configure", prepared_state, mismatched_calculation, repository, &"creation")
-	await process_frame
-	_assert_true(_find_named(mismatched_editor, "RestoreStartingEquipmentButton") != null, "changed creation inputs offer a restore action")
-	_assert_true(_find_text_contains(mismatched_editor, "Starting equipment changed") != null, "restore guidance uses player-facing language")
-	mismatched_editor.queue_free()
 
 	if _failures > 0:
 		printerr("OWCA inventory UI tests failed: %d assertion(s)." % _failures)
