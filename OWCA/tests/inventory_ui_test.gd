@@ -48,28 +48,23 @@ func _run() -> void:
 	var regiment_repository := RegimentDataRepository.new()
 	regiment_repository.load_data()
 	var prepared_state := CharacterState.new()
-	prepared_state.loadout_state = CharacterState.LOADOUT_DRAFT
 	prepared_state.comrade = { "id": DocumentIdentity.generate(), "name": "Trooper Hale of the Thirty-Seventh Varanox Reserve" }
-	var issued_knife_id := DocumentIdentity.generate()
-	prepared_state.owned_items = [{
-		"instance_id": issued_knife_id, "definition_id": "knife", "quantity": 1,
-		"craftsmanship": "Common", "origin": "standard_issue", "location": "carried",
-		"custodian": { "type": "character", "id": "" }, "note": ""
-	}, {
-		"instance_id": DocumentIdentity.generate(), "definition_id": "charge_pack", "quantity": 4,
-		"craftsmanship": "Common", "origin": "standard_issue", "location": "carried",
-		"custodian": { "type": "comrade", "id": prepared_state.comrade.get("id", "") }, "note": "Reserve ammunition assigned to Comrade"
-	}]
-	prepared_state.starting_loadout = [{
-		"grant_id": "knife|per_character|1", "definition_id": "knife", "quantity": 1,
-		"scope": "per_character", "origin": "standard_issue", "issued_instance_ids": [issued_knife_id],
-		"reconciliation": "present", "note": ""
-	}]
+	var starting_grants: Array = [
+		{ "id": "laspistol", "quantity": 1, "scope": "per_character" },
+		{ "id": "flak_vest", "quantity": 1, "scope": "per_character" },
+		{ "id": "charge_pack", "quantity": 4, "scope": "per_character" },
+		{ "id": "uniform", "quantity": 1, "scope": "per_character" }
+	]
+	var inventory_service := CharacterInventoryService.new()
+	inventory_service.materialize_starting_loadout(prepared_state, starting_grants, repository.equipment_repository, "2026-08-15T12:00:00Z")
+	inventory_service.add_item(prepared_state, repository.equipment_repository, "charge_pack", 4, "Common", "later_issue", "carried", "comrade", str(prepared_state.comrade.get("id", "")), "Reserve ammunition assigned to Comrade", "2026-08-15T12:05:00Z")
+	var prepared_calculation := CharacterCalculator.new().calculate(prepared_state, regiment_repository, repository)
+	prepared_calculation["starting_equipment"] = starting_grants.duplicate(true)
 	var editor_script := load("res://OWCA/ui/character_inventory_editor.gd") as GDScript
 	var maintenance_editor := editor_script.new() as VBoxContainer
 	root.add_child(maintenance_editor)
 	maintenance_editor.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
-	maintenance_editor.call("configure", prepared_state, CharacterCalculator.new().calculate(prepared_state, regiment_repository, repository), repository, &"maintenance")
+	maintenance_editor.call("configure", prepared_state, prepared_calculation, repository, &"maintenance")
 	maintenance_editor.size.x = 960.0
 	await process_frame
 	_assert_true(_find_named(maintenance_editor, "CraftsmanshipSelector") != null, "owned rows expose craftsmanship editing")
@@ -90,9 +85,22 @@ func _run() -> void:
 	maintenance_editor.queue_free()
 	await process_frame
 
+	var unprepared_state := CharacterState.new()
+	var unprepared_editor := editor_script.new() as VBoxContainer
+	root.add_child(unprepared_editor)
+	unprepared_editor.call("configure", unprepared_state, prepared_calculation, repository, &"creation")
+	await process_frame
+	var prepare_starting_equipment := _find_named(unprepared_editor, "PrepareStartingEquipmentButton") as Button
+	_assert_true(prepare_starting_equipment != null, "unprepared creation exposes a prepare starting equipment action")
+	if prepare_starting_equipment != null:
+		_assert_true(prepare_starting_equipment.text == "PREPARE STARTING EQUIPMENT", "creation preparation action uses player-facing text")
+	_assert_true(_find_named(unprepared_editor, "StartingGrantReconciliation") == null, "unprepared creation hides reconciliation controls")
+	unprepared_editor.queue_free()
+	await process_frame
+
 	var creation_editor := editor_script.new() as VBoxContainer
 	root.add_child(creation_editor)
-	creation_editor.call("configure", prepared_state, CharacterCalculator.new().calculate(prepared_state, regiment_repository, repository), repository, &"creation")
+	creation_editor.call("configure", prepared_state, prepared_calculation, repository, &"creation")
 	await process_frame
 	_assert_true(_find_named(creation_editor, "CreationStartingEquipment") != null, "creation mode exposes Starting Equipment")
 	_assert_true(_find_named(creation_editor, "CreationOptionalEquipment") != null, "creation mode exposes Add Optional Equipment")
@@ -102,7 +110,21 @@ func _run() -> void:
 	_assert_true(_find_named(creation_editor, "OwnedCustodianFilter") == null, "creation mode hides custody administration")
 	_assert_true(_find_named(creation_editor, "StartingGrantReconciliation") == null, "creation mode hides reconciliation values")
 	_assert_true(_find_text(creation_editor, "RECENT INVENTORY HISTORY") == null, "creation mode hides audit history")
+	for group_name in ["WEAPONS", "ARMOUR", "AMMUNITION", "GEAR"]:
+		_assert_true(_find_text(creation_editor, group_name) != null, "prepared starting equipment groups %s for players" % group_name)
+	_assert_true(_find_button(creation_editor, "REMOVE") == null, "starting equipment entries cannot be removed during creation")
 	creation_editor.queue_free()
+	await process_frame
+
+	var mismatched_calculation := prepared_calculation.duplicate(true)
+	mismatched_calculation["starting_equipment"] = [{ "id": "knife", "quantity": 1, "scope": "per_character" }]
+	var mismatched_editor := editor_script.new() as VBoxContainer
+	root.add_child(mismatched_editor)
+	mismatched_editor.call("configure", prepared_state, mismatched_calculation, repository, &"creation")
+	await process_frame
+	_assert_true(_find_named(mismatched_editor, "RestoreStartingEquipmentButton") != null, "changed creation inputs offer a restore action")
+	_assert_true(_find_text_contains(mismatched_editor, "Starting equipment changed") != null, "restore guidance uses player-facing language")
+	mismatched_editor.queue_free()
 
 	if _failures > 0:
 		printerr("OWCA inventory UI tests failed: %d assertion(s)." % _failures)
@@ -131,6 +153,18 @@ func _find_text(node: Node, exact_text: String) -> Label:
 		if child is Label and (child as Label).text == exact_text:
 			return child as Label
 		var nested := _find_text(child, exact_text)
+		if nested != null:
+			return nested
+	return null
+
+
+func _find_text_contains(node: Node, fragment: String) -> Label:
+	if node == null:
+		return null
+	for child in node.get_children():
+		if child is Label and fragment in (child as Label).text:
+			return child as Label
+		var nested := _find_text_contains(child, fragment)
 		if nested != null:
 			return nested
 	return null

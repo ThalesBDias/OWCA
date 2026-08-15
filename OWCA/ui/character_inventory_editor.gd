@@ -46,9 +46,106 @@ func _rebuild() -> void:
 
 
 func _rebuild_creation() -> void:
-	add_child(_named_section("CreationStartingEquipment", "STARTING EQUIPMENT"))
+	var starting_equipment := _named_section("CreationStartingEquipment", "STARTING EQUIPMENT")
+	add_child(starting_equipment)
+	_build_creation_starting_equipment(starting_equipment)
 	add_child(_named_section("CreationOptionalEquipment", "ADD OPTIONAL EQUIPMENT"))
 	add_child(_named_section("CreationReviewFinalize", "REVIEW AND FINALIZE"))
+
+
+func _build_creation_starting_equipment(parent: VBoxContainer) -> void:
+	if state.loadout_state == CharacterState.LOADOUT_UNPREPARED:
+		parent.add_child(_label("Prepare your calculated starting equipment before continuing."))
+		var prepare := Button.new()
+		prepare.name = "PrepareStartingEquipmentButton"
+		prepare.text = "PREPARE STARTING EQUIPMENT"
+		prepare.custom_minimum_size.y = 44
+		prepare.pressed.connect(_prepare_starting_loadout)
+		parent.add_child(prepare)
+		return
+	var expected_grants := calculation.get("starting_equipment", []) as Array
+	if not bool(inventory_service.call("starting_loadout_matches", state, expected_grants)):
+		parent.add_child(_label("Starting equipment changed after an earlier character choice. Restore it before finalizing."))
+		var restore := Button.new()
+		restore.name = "RestoreStartingEquipmentButton"
+		restore.text = "RESTORE STARTING EQUIPMENT"
+		restore.custom_minimum_size.y = 44
+		restore.pressed.connect(_rebuild_starting_loadout)
+		parent.add_child(restore)
+		return
+	var grouped_items: Dictionary = {
+		"WEAPONS": [],
+		"ARMOUR": [],
+		"AMMUNITION": [],
+		"GEAR": []
+	}
+	var resolved_by_instance_id := _resolved_items_by_instance_id()
+	for owned: Dictionary in state.owned_items:
+		var instance_id := str(owned.get("instance_id", ""))
+		if not _is_starting_instance(instance_id):
+			continue
+		var resolved := resolved_by_instance_id.get(instance_id, {}) as Dictionary
+		var definition := character_repository.equipment_repository.get_item(str(owned.get("definition_id", "")))
+		var category := str(resolved.get("category", definition.get("category", "")))
+		(grouped_items[_creation_group_for_category(category)] as Array).append({
+			"owned": owned,
+			"resolved": resolved,
+			"definition": definition
+		})
+	for group_name in ["WEAPONS", "ARMOUR", "AMMUNITION", "GEAR"]:
+		var entries := grouped_items[group_name] as Array
+		if entries.is_empty():
+			continue
+		parent.add_child(_heading(group_name))
+		for entry_value: Variant in entries:
+			var entry := entry_value as Dictionary
+			var owned := entry.get("owned", {}) as Dictionary
+			var resolved := entry.get("resolved", {}) as Dictionary
+			var definition := entry.get("definition", {}) as Dictionary
+			var item := VBoxContainer.new()
+			item.add_child(_label("%dx %s" % [int(owned.get("quantity", 1)), str(resolved.get("name", definition.get("name", owned.get("definition_id", "Item"))))]))
+			var profile := _creation_item_profile(definition)
+			if not profile.is_empty():
+				item.add_child(_label(profile))
+			item.add_child(_label("STARTING EQUIPMENT"))
+			parent.add_child(item)
+
+
+func _resolved_items_by_instance_id() -> Dictionary:
+	var resolved_by_instance_id: Dictionary = {}
+	var inventory := calculation.get("inventory", {}) as Dictionary
+	for item: Dictionary in inventory.get("items", []):
+		resolved_by_instance_id[str(item.get("instance_id", ""))] = item
+	return resolved_by_instance_id
+
+
+func _creation_group_for_category(category: String) -> String:
+	match category:
+		"ranged_weapon", "melee_weapon", "grenade_missile":
+			return "WEAPONS"
+		"armour":
+			return "ARMOUR"
+		"ammunition":
+			return "AMMUNITION"
+		_:
+			return "GEAR"
+
+
+func _creation_item_profile(definition: Dictionary) -> String:
+	var profile := definition.get("profile", {}) as Dictionary
+	if not profile.is_empty():
+		var details: Array[String] = []
+		if profile.has("class"):
+			details.append(str(profile.get("class", "")))
+		if profile.has("damage"):
+			details.append("Damage %s" % profile.get("damage", "-"))
+		if profile.has("penetration"):
+			details.append("Pen %s" % profile.get("penetration", "-"))
+		return " | ".join(details)
+	var armour := definition.get("armour", {}) as Dictionary
+	if not armour.is_empty():
+		return "Armour AP %s" % armour.get("ap", "-")
+	return str(definition.get("summary", ""))
 
 
 func _rebuild_maintenance() -> void:
