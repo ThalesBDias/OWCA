@@ -15,7 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Added durable owned-item instances with safe stack splitting, quantity, craftsmanship, origin, equipped/carried/stored location, character/Comrade/squad custody, and short notes.
 - Added idempotent starting-loadout materialization, changed-creation grant rebuilding, durable issued-item reconciliation, explicit loadout finalization, minimal structured Comrade identity, and append-only inventory audit events.
 - Added searchable supported-equipment selection, carried ammunition quantities in catalogue units, armour AP by body location, and Core carrying-capacity calculations.
-- Added partial-weight reporting for equipment whose source provides no weight, rather than displaying a false exact total.
+- Added partial-weight reporting for genuinely missing catalogue definitions; valid catalogue definitions with no printed source weight count as `0 kg`.
 - Added character inventory service, calculator, UI, migration, interoperability, responsive-layout, and printable-loadout regression tests.
 - Added provenance-aware starting-grant signatures and protected grant-owned stacks so later equipment survives creation-input rebuilds.
 - Added strict v4 integer, craftsmanship, timestamp, snapshot, lifecycle, and quantity-one weapon/armour validation at load and save boundaries.
@@ -45,7 +45,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
-- Create Character now automatically materializes and reconciles intact calculated starting grants, groups loadout items as Weapons, Armour, Ammunition, and Gear, and keeps profiles, armour, carried weight, and the Finalize Loadout and Continue to Review action visible without exposing maintenance controls.
+- Create Character now lets players prepare calculated starting grants with **Prepare Starting Equipment**, then automatically reconciles intact prepared grants; it also groups loadout items as Weapons, Armour, Ammunition, and Gear, and keeps profiles, armour, carried weight, and the Finalize Loadout and Continue to Review action visible without exposing maintenance controls.
 - Manage Loadout retains custody, provenance, reconciliation, audit-history, instance-identity, and other detailed maintenance controls outside the player-focused creation flow.
 - Character saves now use envelope/state version 4 and public interoperability schema `1.3.0`, with v1-v3 migration to an unprepared draft loadout.
 - The landing page now uses a responsive four-workflow layout and the application version is `0.7.1-dev`.
