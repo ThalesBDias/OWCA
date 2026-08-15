@@ -145,7 +145,10 @@ func _creation_item_profile(definition: Dictionary) -> String:
 	var armour := definition.get("armour", {}) as Dictionary
 	if not armour.is_empty():
 		return "Armour AP %s" % armour.get("ap", "-")
-	return str(definition.get("summary", ""))
+	var summary := str(definition.get("summary", ""))
+	if not summary.is_empty():
+		return summary
+	return "%s | %s" % [str(definition.get("category", "equipment")).replace("_", " ").capitalize(), str(definition.get("availability", "Standard issue"))]
 
 
 func _rebuild_maintenance() -> void:

@@ -112,6 +112,7 @@ func _run() -> void:
 	_assert_true(_find_text(creation_editor, "RECENT INVENTORY HISTORY") == null, "creation mode hides audit history")
 	for group_name in ["WEAPONS", "ARMOUR", "AMMUNITION", "GEAR"]:
 		_assert_true(_find_text(creation_editor, group_name) != null, "prepared starting equipment groups %s for players" % group_name)
+	_assert_true(_find_text(creation_editor, "Wargear | Standard issue") != null, "Uniform has a concise player-facing starting-equipment profile")
 	_assert_true(_find_button(creation_editor, "REMOVE") == null, "starting equipment entries cannot be removed during creation")
 	creation_editor.queue_free()
 	await process_frame
