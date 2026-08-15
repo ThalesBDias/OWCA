@@ -49,7 +49,9 @@ func _rebuild_creation() -> void:
 	var starting_equipment := _named_section("CreationStartingEquipment", "STARTING EQUIPMENT")
 	add_child(starting_equipment)
 	_build_creation_starting_equipment(starting_equipment)
-	add_child(_named_section("CreationOptionalEquipment", "ADD OPTIONAL EQUIPMENT"))
+	var optional_equipment := _named_section("CreationOptionalEquipment", "ADD OPTIONAL EQUIPMENT")
+	add_child(optional_equipment)
+	_build_creation_optional_equipment(optional_equipment)
 	add_child(_named_section("CreationReviewFinalize", "REVIEW AND FINALIZE"))
 
 
@@ -109,6 +111,61 @@ func _build_creation_starting_equipment(parent: VBoxContainer) -> void:
 				item.add_child(_label(profile))
 			item.add_child(_label("STARTING EQUIPMENT"))
 			parent.add_child(item)
+
+
+func _build_creation_optional_equipment(parent: VBoxContainer) -> void:
+	_build_catalogue_add_controls(parent, "ADD EQUIPMENT")
+	var grouped_items: Dictionary = {
+		"WEAPONS": [],
+		"ARMOUR": [],
+		"AMMUNITION": [],
+		"GEAR": []
+	}
+	var resolved_by_instance_id := _resolved_items_by_instance_id()
+	for owned: Dictionary in state.owned_items:
+		var instance_id := str(owned.get("instance_id", ""))
+		if _is_starting_instance(instance_id):
+			continue
+		var definition := character_repository.equipment_repository.get_item(str(owned.get("definition_id", "")))
+		var resolved := resolved_by_instance_id.get(instance_id, definition) as Dictionary
+		var category := str(resolved.get("category", definition.get("category", "")))
+		(grouped_items[_creation_group_for_category(category)] as Array).append({
+			"owned": owned,
+			"resolved": resolved
+		})
+	for group_name in ["WEAPONS", "ARMOUR", "AMMUNITION", "GEAR"]:
+		var entries := grouped_items[group_name] as Array
+		if entries.is_empty():
+			continue
+		parent.add_child(_heading(group_name))
+		for entry_value: Variant in entries:
+			var entry := entry_value as Dictionary
+			parent.add_child(_build_creation_item_card(entry.get("owned", {}) as Dictionary, entry.get("resolved", {}) as Dictionary, true))
+
+
+func _build_creation_item_card(owned: Dictionary, resolved: Dictionary, removable: bool) -> Control:
+	var item := VBoxContainer.new()
+	item.add_child(_label("%dx %s" % [int(owned.get("quantity", 1)), str(resolved.get("name", owned.get("definition_id", "Item")))]))
+	var profile := _creation_item_profile(resolved)
+	if not profile.is_empty():
+		item.add_child(_label(profile))
+	item.add_child(_label("OPTIONAL ADDITION"))
+	if removable:
+		var remove := Button.new()
+		remove.name = "CreationOptionalRemoveButton"
+		remove.text = "REMOVE"
+		remove.pressed.connect(func() -> void:
+			var result: Dictionary = inventory_service.call(
+				"remove_item",
+				state,
+				str(owned.get("instance_id", "")),
+				"Removed during character creation",
+				_timestamp()
+			)
+			_emit_result(result)
+		)
+		item.add_child(remove)
+	return item
 
 
 func _resolved_items_by_instance_id() -> Dictionary:
@@ -174,7 +231,7 @@ func _rebuild_maintenance() -> void:
 		rebuild.pressed.connect(_rebuild_starting_loadout)
 		add_child(rebuild)
 	_build_starting_grant_reconciliation()
-	_build_catalogue_add_controls()
+	_build_catalogue_add_controls(self)
 	_build_owned_items()
 	_build_history()
 	if state.loadout_state != CharacterState.LOADOUT_FINALIZED:
@@ -261,8 +318,8 @@ func _build_starting_grant_reconciliation() -> void:
 		add_child(row)
 
 
-func _build_catalogue_add_controls() -> void:
-	add_child(_heading("ADD SUPPORTED EQUIPMENT"))
+func _build_catalogue_add_controls(parent: VBoxContainer, add_button_label: String = "ADD TO CHARACTER") -> void:
+	parent.add_child(_heading("ADD SUPPORTED EQUIPMENT"))
 	var filters := HBoxContainer.new()
 	catalogue_search = LineEdit.new()
 	catalogue_search.placeholder_text = "Search equipment name, ID, family, class, or quality..."
@@ -275,22 +332,22 @@ func _build_catalogue_add_controls() -> void:
 		category_filter.set_item_metadata(category_filter.item_count - 1, str(pair[1]))
 	category_filter.item_selected.connect(func(_index: int) -> void: _refresh_catalogue_matches())
 	filters.add_child(category_filter)
-	add_child(filters)
+	parent.add_child(filters)
 	var add_row := HBoxContainer.new()
 	catalogue_selector = OptionButton.new()
 	catalogue_selector.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	catalogue_selector.item_selected.connect(func(_index: int) -> void: _render_catalogue_details())
 	add_row.add_child(catalogue_selector)
 	var add_button := Button.new()
-	add_button.text = "ADD TO CHARACTER"
+	add_button.text = add_button_label
 	add_button.pressed.connect(_add_selected_item)
 	add_row.add_child(add_button)
-	add_child(add_row)
+	parent.add_child(add_row)
 	catalogue_details = RichTextLabel.new()
 	catalogue_details.bbcode_enabled = true
 	catalogue_details.fit_content = true
 	catalogue_details.custom_minimum_size.y = 76
-	add_child(catalogue_details)
+	parent.add_child(catalogue_details)
 	_refresh_catalogue_matches()
 
 
@@ -494,7 +551,8 @@ func _add_selected_item() -> void:
 	if _catalogue_matches.is_empty() or catalogue_selector.selected < 0:
 		return
 	var definition := _catalogue_matches[catalogue_selector.selected]
-	var result: Dictionary = inventory_service.call("add_item", state, character_repository.equipment_repository, str(definition.get("id", "")), 1, str(definition.get("craftsmanship", "Common")), "later_issue", "carried", "character", "", "Added by player", _timestamp())
+	var craftsmanship := "Common" if presentation_mode == MODE_CREATION else str(definition.get("craftsmanship", "Common"))
+	var result: Dictionary = inventory_service.call("add_item", state, character_repository.equipment_repository, str(definition.get("id", "")), 1, craftsmanship, "later_issue", "carried", "character", "", "Added by player", _timestamp())
 	_emit_result(result)
 
 

@@ -110,11 +110,48 @@ func _run() -> void:
 	_assert_true(_find_named(creation_editor, "OwnedCustodianFilter") == null, "creation mode hides custody administration")
 	_assert_true(_find_named(creation_editor, "StartingGrantReconciliation") == null, "creation mode hides reconciliation values")
 	_assert_true(_find_text(creation_editor, "RECENT INVENTORY HISTORY") == null, "creation mode hides audit history")
-	for group_name in ["WEAPONS", "ARMOUR", "AMMUNITION", "GEAR"]:
-		_assert_true(_find_text(creation_editor, group_name) != null, "prepared starting equipment groups %s for players" % group_name)
-	_assert_true(_find_text(creation_editor, "Wargear | Standard issue") != null, "Uniform has a concise player-facing starting-equipment profile")
-	_assert_true(_find_button(creation_editor, "REMOVE") == null, "starting equipment entries cannot be removed during creation")
+	var creation_catalogue_search := creation_editor.get("catalogue_search") as LineEdit
+	var creation_catalogue_details := creation_editor.get("catalogue_details") as RichTextLabel
+	_assert_true(creation_catalogue_search != null and creation_catalogue_details != null, "creation mode exposes searchable optional equipment")
+	if creation_catalogue_search != null and creation_catalogue_details != null:
+		creation_catalogue_search.text = "m36 lasgun"
+		creation_catalogue_search.text_changed.emit(creation_catalogue_search.text)
+		await process_frame
+		for field_name in ["Damage", "Pen", "Range", "RoF", "Magazine", "Reload", "Qualities"]:
+			_assert_true(field_name in creation_catalogue_details.text, "creation weapon details include %s" % field_name)
+	var owned_item_count := prepared_state.owned_items.size()
+	creation_editor.call("_add_selected_item")
+	_assert_equal(prepared_state.owned_items.size(), owned_item_count + 1, "creation adds one selected optional item")
+	if prepared_state.owned_items.size() == owned_item_count + 1:
+		var optional_item := prepared_state.owned_items[prepared_state.owned_items.size() - 1] as Dictionary
+		_assert_equal((optional_item.get("custodian", {}) as Dictionary).get("type", ""), "character", "creation optional item defaults to character custody")
+		_assert_equal(optional_item.get("craftsmanship", ""), "Common", "creation optional item defaults to Common craftsmanship")
+		_assert_equal(optional_item.get("location", ""), "carried", "creation optional item defaults to carried location")
+		_assert_equal(optional_item.get("origin", ""), "later_issue", "creation optional item defaults to later issue origin")
 	creation_editor.queue_free()
+	await process_frame
+	var optional_editor := editor_script.new() as VBoxContainer
+	root.add_child(optional_editor)
+	optional_editor.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
+	optional_editor.call("configure", prepared_state, prepared_calculation, repository, &"creation")
+	optional_editor.size.x = 960.0
+	await process_frame
+	var optional_section := _find_named(optional_editor, "CreationOptionalEquipment")
+	var starting_section := _find_named(optional_editor, "CreationStartingEquipment")
+	_assert_true(_find_button(optional_editor, "ADD EQUIPMENT") != null, "creation add action uses concise player-facing text")
+	var optional_remove := _find_named(optional_section, "CreationOptionalRemoveButton") as Button
+	_assert_true(optional_remove != null, "creation optional additions expose a remove action")
+	if optional_remove != null:
+		var optional_count_before_removal := prepared_state.owned_items.size()
+		optional_remove.pressed.emit()
+		_assert_equal(prepared_state.owned_items.size(), optional_count_before_removal - 1, "creation optional remove action removes an owned item")
+	_assert_true(_find_named(starting_section, "CreationOptionalRemoveButton") == null, "starting equipment remains protected from optional removal")
+	for group_name in ["WEAPONS", "ARMOUR", "AMMUNITION", "GEAR"]:
+		_assert_true(_find_text(optional_editor, group_name) != null, "prepared starting equipment groups %s for players" % group_name)
+	_assert_true(_find_text(optional_editor, "Wargear | Standard issue") != null, "Uniform has a concise player-facing starting-equipment profile")
+	_assert_true(_find_button(starting_section, "REMOVE") == null, "starting equipment entries cannot be removed during creation")
+	_assert_interactive_controls_fit_width(optional_editor, 960.0)
+	optional_editor.queue_free()
 	await process_frame
 
 	var mismatched_calculation := prepared_calculation.duplicate(true)
@@ -172,6 +209,8 @@ func _find_text_contains(node: Node, fragment: String) -> Label:
 
 
 func _find_named(node: Node, node_name: String) -> Node:
+	if node == null:
+		return null
 	if node.name == node_name:
 		return node
 	for child in node.get_children():
@@ -194,3 +233,9 @@ func _assert_true(condition: bool, label: String) -> void:
 	if not condition:
 		_failures += 1
 		printerr("FAILED: %s" % label)
+
+
+func _assert_equal(actual: Variant, expected: Variant, label: String) -> void:
+	if actual != expected:
+		_failures += 1
+		printerr("FAILED: %s (expected %s, got %s)" % [label, expected, actual])
