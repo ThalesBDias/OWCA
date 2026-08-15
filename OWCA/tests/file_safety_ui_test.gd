@@ -92,14 +92,14 @@ func _test_character_controls() -> void:
 	var stage_content := creator.get("stage_content") as Node
 	_assert_true(_find_button(stage_content, "SAVE CHARACTER JSON AS") != null, "character review exposes Save As")
 	_assert_true(_find_button(stage_content, "DUPLICATE AS NEW CHARACTER RECORD") != null, "character review exposes Duplicate")
-	var lifecycle_button := _find_button(stage_content, "MARK CREATION COMPLETE")
+	var lifecycle_button := _find_button(stage_content, "MARK CHARACTER CREATION COMPLETE")
 	_assert_true(lifecycle_button != null and lifecycle_button.disabled, "incomplete character cannot be marked complete")
 
 	creator.call("_load_character_from_path", "res://OWCA/examples/varanox_weapon_specialist.owchar.json")
 	await process_frame
 	var state := creator.get("state") as CharacterState
 	stage_content = creator.get("stage_content") as Node
-	_assert_true(_find_button(stage_content, "REOPEN AS DRAFT") != null, "completed character can be explicitly reopened")
+	_assert_true(_find_button(stage_content, "RETURN TO CHARACTER CREATION") != null, "completed character can be explicitly reopened")
 	var original_document_id := state.document_id
 	creator.call("_save_character_to_path", CHARACTER_PATH)
 	var saved_envelope := _read_json(CHARACTER_PATH)

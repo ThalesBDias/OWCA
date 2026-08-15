@@ -130,13 +130,21 @@ Tests under `OWCA/tests/` are executable documentation:
 
 Every bug fix should add a test that fails before the fix. Every new rules-data shape should include at least one accepted and one rejected example.
 
-## Planned equipment architecture
+## Equipment architecture
 
-Future weapon work should distinguish catalog definitions from owned instances:
+`EquipmentDataRepository` owns the v0.6 immutable catalogue and is shared by the regiment and character repositories. Equipment work distinguishes definitions from future owned instances:
 
 - a weapon definition contains immutable base statistics;
 - an owned weapon instance has a unique ID, craftsmanship, modifications, and notes;
 - temporary ammunition belongs to session/loadout state rather than the immutable definition; and
 - modified statistics are calculated through a documented pipeline rather than written back into base data.
 
-This separation will let two weapons of the same type carry different modifications without duplicating catalog rules.
+The read-only Armoury consumes definitions directly. v0.7 now gives every owned weapon or armour piece an independent durable instance without duplicating or mutating catalogue rules; v0.8 can attach modifications to those instances.
+
+## Inventory architecture
+
+`CharacterState` owns current item instances, a minimal Comrade identity, provenance-aware starting-grant reconciliation, explicit loadout state, and append-only audit events. Current ownership is authoritative; events explain issue, acquisition, exchange, transfer, loss, and corrections but are not replayed as a gameplay simulation. Grant-owned stacks cannot absorb later acquisitions or have their issue provenance rewritten, so rebuilding creation gear cannot delete later equipment.
+
+`CharacterInventoryService` is the only mutation boundary used by the UI. It materializes starting grants idempotently, preserves source quantities when packages merge, splits stacks without fabricating acquisitions, and receives timestamps from callers. When creation choices change, it can rebuild only obsolete starting-issue records while preserving later acquisitions and append-only history. `CharacterInventoryCalculator` joins saved instances to `EquipmentDataRepository`, applies the data-driven carrying table from `InventoryRulesRepository`, selects the highest equipped armour AP per location, and keeps missing definitions visible as unresolved player records.
+
+`CharacterInventoryEditor` is a reusable presentation control. Both the creation-stage Loadout page and standalone Manage Loadout scene use it; persistence, calculations, and audit rules therefore remain identical in both workflows. Its item and reconciliation forms stack vertically at the minimum window width. Printable loadout projection paginates overflow and includes the minimal Comrade identity without printing the complete audit ledger.

@@ -47,28 +47,6 @@
     "weapon_training_shock": { "name": "Weapon Training (Shock)", "stackable": false },
     "weapon_training_solid_projectile": { "name": "Weapon Training (Solid Projectile)", "stackable": false }
   },
-  "equipment": {
-    "auspex_scanner": { "name": "Auspex/scanner" },
-    "chainsword_common": { "name": "Common Craftsmanship chainsword" },
-    "combi_tool": { "name": "Combi-tool" },
-    "data_slate": { "name": "Data-slate" },
-    "diagnostor": { "name": "Diagnostor" },
-    "flamer_common": { "name": "Common Craftsmanship flamer" },
-    "frag_grenade": { "name": "Frag grenade" },
-    "frag_missile": { "name": "Frag missile" },
-    "injector": { "name": "Injector" },
-    "krak_grenade": { "name": "Krak grenade" },
-    "lascutter": { "name": "Lascutter" },
-    "lasgun_good": { "name": "Good Craftsmanship lasgun" },
-    "laspistol_common": { "name": "Common Craftsmanship laspistol" },
-    "medikit": { "name": "Medikit" },
-    "mind_impulse_unit_common": { "name": "Common Craftsmanship mind impulse unit" },
-    "missile_launcher_common": { "name": "Common Craftsmanship missile launcher" },
-    "regimental_favoured_basic_weapon": { "name": "Regimental Favoured Basic Weapon" },
-    "regimental_favoured_heavy_weapon": { "name": "Regimental Favoured Heavy Weapon" },
-    "shotgun_common": { "name": "Common Craftsmanship shotgun" },
-    "heavy_stubber_common": { "name": "Common Craftsmanship heavy stubber" }
-  },
   "specialities": [
     {
       "id": "heavy_gunner",

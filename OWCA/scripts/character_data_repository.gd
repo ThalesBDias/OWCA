@@ -9,21 +9,32 @@ extends RefCounted
 
 const DEFAULT_DATA_PATH := "res://OWCA/data/guardsman_specialities.json"
 const DEFAULT_ADVANCEMENT_PATH := "res://OWCA/data/guardsman_advancements.json"
+const InventoryRulesRepositoryScript = preload("res://OWCA/scripts/inventory_rules_repository.gd")
 
 var data: Dictionary = {}
 var advancement_data: Dictionary = {}
 var last_error: String = ""
+var equipment_repository := EquipmentDataRepository.new()
+var inventory_rules_repository: RefCounted = InventoryRulesRepositoryScript.new()
 var _specialities_by_id: Dictionary = {}
 var _choices_by_id: Dictionary = {}
 
 
 ## Replaces every in-memory index only after both JSON documents parse and pass
 ## structural validation. `last_error` contains a player/developer-facing cause.
-func load_data(path: String = DEFAULT_DATA_PATH, advancement_path: String = DEFAULT_ADVANCEMENT_PATH) -> Error:
+func load_data(path: String = DEFAULT_DATA_PATH, advancement_path: String = DEFAULT_ADVANCEMENT_PATH, equipment_path: String = EquipmentDataRepository.DEFAULT_DATA_PATH, inventory_rules_path: String = "res://OWCA/data/inventory_rules.json") -> Error:
 	last_error = ""
 	_specialities_by_id.clear()
 	_choices_by_id.clear()
 	advancement_data.clear()
+	var equipment_error := equipment_repository.load_data(equipment_path)
+	if equipment_error != OK:
+		last_error = equipment_repository.last_error
+		return equipment_error
+	var inventory_error := int(inventory_rules_repository.call("load_data", inventory_rules_path))
+	if inventory_error != OK:
+		last_error = str(inventory_rules_repository.get("last_error"))
+		return inventory_error
 
 	var file := FileAccess.open(path, FileAccess.READ)
 	if file == null:
@@ -75,6 +86,8 @@ func get_choice(choice_id: String) -> Dictionary:
 
 
 func get_catalog_entry(catalog: String, entry_id: String) -> Dictionary:
+	if catalog == "equipment":
+		return equipment_repository.get_item(entry_id)
 	var starting_entry := (data.get(catalog, {}) as Dictionary).get(entry_id, {}) as Dictionary
 	if not starting_entry.is_empty():
 		return starting_entry
@@ -249,11 +262,10 @@ func _validate_effects(effects: Dictionary, context: String) -> String:
 		for entry_id: Variant in effects.get(catalog_name, []):
 			if not catalog.has(str(entry_id)):
 				return "%s references unknown %s id '%s'." % [context, catalog_name, entry_id]
-	var equipment_catalog := data.get("equipment", {}) as Dictionary
 	for equipment_value: Variant in effects.get("equipment", []):
 		if not equipment_value is Dictionary:
 			return "%s contains a non-object equipment grant." % context
 		var equipment_id := str((equipment_value as Dictionary).get("id", ""))
-		if not equipment_catalog.has(equipment_id):
+		if not equipment_repository.has_item(equipment_id):
 			return "%s references unknown equipment id '%s'." % [context, equipment_id]
 	return ""

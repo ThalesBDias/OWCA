@@ -9,6 +9,7 @@
     "version",
     "schema_version",
     "rules_content_version",
+    "equipment_rules_content_version",
     "regiment"
   ],
   "properties": {
@@ -18,6 +19,7 @@
     "producer": { "$ref": "#/$defs/producer" },
     "saved_at_utc": { "type": "string", "minLength": 1 },
     "rules_content_version": { "type": "string", "minLength": 1 },
+    "equipment_rules_content_version": { "type": "string", "minLength": 1 },
     "regiment": { "$ref": "#/$defs/regiment_state" },
     "character_creation_choices": {
       "type": "array",

@@ -12,7 +12,6 @@
     "sources",
     "skills",
     "talents",
-    "equipment",
     "base_effects",
     "options"
   ],
@@ -29,7 +28,6 @@
     "rule_references": { "type": "object", "additionalProperties": { "$ref": "#/$defs/source_reference" } },
     "skills": { "type": "object", "additionalProperties": { "$ref": "#/$defs/skill" } },
     "talents": { "type": "object", "additionalProperties": { "$ref": "#/$defs/talent" } },
-    "equipment": { "type": "object", "additionalProperties": { "$ref": "#/$defs/catalog_entry" } },
     "base_effects": { "$ref": "#/$defs/effects" },
     "options": {
       "type": "array",

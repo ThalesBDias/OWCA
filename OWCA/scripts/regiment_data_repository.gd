@@ -8,15 +8,20 @@ const DEFAULT_DATA_PATH := "res://OWCA/data/regiment_options.json"
 
 var data: Dictionary = {}
 var last_error: String = ""
+var equipment_repository := EquipmentDataRepository.new()
 var _options_by_id: Dictionary = {}
 var _choices_by_id: Dictionary = {}
 
 
 ## Parses and validates a complete catalog before exposing any indexed options.
-func load_data(path: String = DEFAULT_DATA_PATH) -> Error:
+func load_data(path: String = DEFAULT_DATA_PATH, equipment_path: String = EquipmentDataRepository.DEFAULT_DATA_PATH) -> Error:
 	last_error = ""
 	_options_by_id.clear()
 	_choices_by_id.clear()
+	var equipment_error := equipment_repository.load_data(equipment_path)
+	if equipment_error != OK:
+		last_error = equipment_repository.last_error
+		return equipment_error
 
 	var file := FileAccess.open(path, FileAccess.READ)
 	if file == null:
@@ -92,6 +97,8 @@ func get_category_order() -> Array[String]:
 
 
 func get_catalog_entry(catalog: String, entry_id: String) -> Dictionary:
+	if catalog == "equipment":
+		return equipment_repository.get_item(entry_id)
 	var entries := data.get(catalog, {}) as Dictionary
 	return entries.get(entry_id, {}) as Dictionary
 
@@ -164,12 +171,11 @@ func _validate_effect_references(effects: Dictionary, context: String) -> String
 		for entry_id: Variant in effects.get(catalog_name, []):
 			if not catalog.has(str(entry_id)):
 				return "%s references unknown %s id '%s'." % [context, catalog_name, entry_id]
-	var equipment_catalog := data.get("equipment", {}) as Dictionary
 	for value: Variant in effects.get("equipment", []):
 		if not value is Dictionary:
 			return "%s contains an equipment grant that is not an object." % context
 		var equipment_id := str(value.get("id", ""))
-		if not equipment_catalog.has(equipment_id):
+		if not equipment_repository.has_item(equipment_id):
 			return "%s references unknown equipment id '%s'." % [context, equipment_id]
 	return ""
 

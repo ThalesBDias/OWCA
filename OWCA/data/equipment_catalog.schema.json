@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://thalesbdias.github.io/WOCA/schemas/equipment-catalog-v1.json",
+  "title": "OWCA Equipment Catalogue",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "content_version", "sources", "items"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "content_version": { "type": "string", "minLength": 1 },
+    "scope_note": { "type": "string" },
+    "sources": { "type": "object", "minProperties": 1, "additionalProperties": { "$ref": "#/$defs/source_definition" } },
+    "items": { "type": "array", "items": { "$ref": "#/$defs/item" } }
+  },
+  "$defs": {
+    "source_definition": {
+      "type": "object",
+      "required": ["title", "short"],
+      "properties": { "title": { "type": "string" }, "short": { "type": "string" } }
+    },
+    "source_reference": {
+      "type": "object",
+      "required": ["book", "page"],
+      "properties": {
+        "book": { "type": "string", "minLength": 1 },
+        "page": { "type": "integer", "minimum": 1 },
+        "page_end": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "weapon_profile": {
+      "type": "object",
+      "required": ["class", "damage", "penetration", "qualities"],
+      "properties": {
+        "class": { "type": "string" },
+        "range_m": { "type": "integer" },
+        "range_text": { "type": "string" },
+        "rate_of_fire": { "type": "string" },
+        "damage": { "type": "string" },
+        "penetration": { "type": "integer", "minimum": 0 },
+        "magazine": { "type": "integer", "minimum": 1 },
+        "reload": { "type": "string" },
+        "qualities": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "item": {
+      "type": "object",
+      "required": ["id", "name", "category", "source"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9_]*$" },
+        "name": { "type": "string", "minLength": 1 },
+        "category": { "enum": ["ranged_weapon", "melee_weapon", "grenade_missile", "ammunition", "armour", "wargear", "weapon_upgrade", "placeholder"] },
+        "family": { "type": "string" },
+        "availability": { "type": "string" },
+        "weight_kg": { "type": "number", "minimum": 0 },
+        "weight_multiplier": { "type": "number", "exclusiveMinimum": 0 },
+        "ammunition_id": { "type": "string" },
+        "carried_unit": { "type": "string" },
+        "base_definition_id": { "type": "string" },
+        "craftsmanship": { "type": "string" },
+        "summary": { "type": "string" },
+        "profile": { "$ref": "#/$defs/weapon_profile" },
+        "armour": {
+          "type": "object",
+          "required": ["locations", "ap"],
+          "properties": {
+            "locations": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+            "ap": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "compatibility": { "type": "object" },
+        "source": { "$ref": "#/$defs/source_reference" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "category": { "enum": ["ranged_weapon", "melee_weapon", "grenade_missile"] } } },
+          "then": { "required": ["profile"] }
+        }
+      ]
+    }
+  }
+}

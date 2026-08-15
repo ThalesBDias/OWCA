@@ -10,16 +10,20 @@
     "schema_version",
     "character_rules_content_version",
     "advancement_rules_content_version",
+    "equipment_rules_content_version",
+    "inventory_rules_content_version",
     "character"
   ],
   "properties": {
     "format": { "const": "owca_character" },
-    "version": { "const": 3 },
+    "version": { "const": 4 },
     "schema_version": { "$ref": "#/$defs/schema_version" },
     "producer": { "$ref": "#/$defs/producer" },
     "saved_at_utc": { "type": "string", "minLength": 1 },
     "character_rules_content_version": { "type": "string", "minLength": 1 },
     "advancement_rules_content_version": { "type": "string", "minLength": 1 },
+    "equipment_rules_content_version": { "type": "string", "minLength": 1 },
+    "inventory_rules_content_version": { "type": "string", "minLength": 1 },
     "character": { "$ref": "#/$defs/character_state" },
     "calculated_preview": { "$ref": "#/$defs/calculated_preview" },
     "extensions": { "$ref": "#/$defs/extensions" }
@@ -119,10 +123,15 @@
         "speciality_resolutions",
         "wounds_roll",
         "fate_roll",
-        "purchased_advances"
+        "purchased_advances",
+        "comrade",
+        "loadout_state",
+        "starting_loadout",
+        "owned_items",
+        "inventory_events"
       ],
       "properties": {
-        "version": { "const": 3 },
+        "version": { "const": 4 },
         "document_id": { "$ref": "#/$defs/document_id" },
         "workflow_state": { "enum": ["draft", "creation_complete", "campaign_active"] },
         "name": { "type": "string", "minLength": 1 },
@@ -144,7 +153,12 @@
         "purchased_advances": {
           "type": "array",
           "items": { "$ref": "#/$defs/advance_id" }
-        }
+        },
+        "comrade": { "$ref": "#/$defs/comrade" },
+        "loadout_state": { "enum": ["unprepared", "draft", "finalized"] },
+        "starting_loadout": { "type": "array", "items": { "$ref": "#/$defs/starting_grant" } },
+        "owned_items": { "type": "array", "items": { "$ref": "#/$defs/owned_item" } },
+        "inventory_events": { "type": "array", "items": { "$ref": "#/$defs/inventory_event" } }
       },
       "additionalProperties": true
     },
@@ -163,6 +177,8 @@
         "aptitudes": { "type": "array", "items": { "type": "string" } },
         "special_rules": { "type": "array", "items": { "type": "object" } },
         "equipment": { "$ref": "#/$defs/catalog_results" },
+        "starting_equipment": { "$ref": "#/$defs/catalog_results" },
+        "inventory": { "type": "object" },
         "wounds_modifier": { "type": "integer" },
         "wounds": { "type": "integer" },
         "fate_points": { "type": "integer" },
@@ -187,6 +203,82 @@
         "properties": { "id": { "$ref": "#/$defs/stable_id" } },
         "additionalProperties": true
       }
+    },
+    "comrade": {
+      "anyOf": [
+        { "type": "object", "maxProperties": 0 },
+        {
+          "type": "object",
+          "required": ["id", "name"],
+          "properties": {
+            "id": { "$ref": "#/$defs/document_id" },
+            "name": { "type": "string", "minLength": 1 }
+          },
+          "additionalProperties": true
+        }
+      ]
+    },
+    "starting_grant": {
+      "type": "object",
+      "required": ["grant_id", "definition_id", "quantity", "scope", "origin", "issued_instance_ids", "reconciliation", "note"],
+      "properties": {
+        "grant_id": { "type": "string", "minLength": 1 },
+        "definition_id": { "$ref": "#/$defs/stable_id" },
+        "quantity": { "type": "integer", "minimum": 1 },
+        "scope": { "enum": ["per_character", "per_squad"] },
+        "origin": { "enum": ["standard_issue", "speciality_issue"] },
+        "issued_instance_ids": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/document_id" } },
+        "reconciliation": { "enum": ["unresolved", "present", "exchange", "loss", "transfer", "correction"] },
+        "note": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "custodian": {
+      "type": "object",
+      "required": ["type", "id"],
+      "properties": {
+        "type": { "enum": ["character", "comrade", "squad"] },
+        "id": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "owned_item": {
+      "type": "object",
+      "required": ["instance_id", "definition_id", "quantity", "craftsmanship", "origin", "location", "custodian", "note"],
+      "properties": {
+        "instance_id": { "$ref": "#/$defs/document_id" },
+        "definition_id": { "$ref": "#/$defs/stable_id" },
+        "quantity": { "type": "integer", "minimum": 1 },
+        "craftsmanship": { "enum": ["Poor", "Common", "Good", "Best"] },
+        "origin": { "enum": ["standard_issue", "speciality_issue", "later_issue", "exchange", "acquisition", "transfer", "correction"] },
+        "location": { "enum": ["equipped", "carried", "stored"] },
+        "custodian": { "$ref": "#/$defs/custodian" },
+        "note": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "inventory_event": {
+      "type": "object",
+      "required": ["event_id", "timestamp_utc", "type", "instance_id", "definition_id", "quantity", "reason", "item_snapshot"],
+      "properties": {
+        "event_id": { "$ref": "#/$defs/document_id" },
+        "timestamp_utc": { "type": "string", "format": "date-time", "pattern": "Z$" },
+        "type": { "enum": ["issue", "acquisition", "exchange", "transfer", "loss", "quantity", "correction"] },
+        "instance_id": { "$ref": "#/$defs/document_id" },
+        "definition_id": { "$ref": "#/$defs/stable_id" },
+        "quantity": { "type": "integer", "minimum": 1 },
+        "reason": { "type": "string" },
+        "item_snapshot": {
+          "type": "object",
+          "required": ["instance_id", "definition_id", "quantity"],
+          "properties": {
+            "instance_id": { "$ref": "#/$defs/document_id" },
+            "definition_id": { "$ref": "#/$defs/stable_id" },
+            "quantity": { "type": "integer", "minimum": 1 }
+          }
+        }
+      },
+      "additionalProperties": true
     },
     "extensions": {
       "description": "Opaque, consumer-owned, namespaced data preserved by OWCA.",

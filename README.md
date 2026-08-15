@@ -1,4 +1,4 @@
-# Only War Character Assistant v0.5.1 development
+# Only War Character Assistant v0.7.1 development
 
 This module is a data-driven Godot 4 regiment and Guardsman creation assistant. Regiment creation includes every Core Rulebook option in the five supported categories: 8 Home Worlds, 9 Commanding Officers, 8 Regiment Types, 7 Training Doctrines, and 7 Equipment Doctrines. The current character-creation testing slice implements the five Core Guardsman Specialities: Heavy Gunner, Medic, Operator, Sergeant, and Weapon Specialist. Entries were checked against the supplied Only War Core Rulebook PDF; content files record printed book pages rather than PDF viewer indices.
 
@@ -20,6 +20,9 @@ OWCA/
     regiment_options.json       Regiment rules and catalog data
     guardsman_specialities.json Five Core Guardsman starting packages
     guardsman_advancements.json XP costs, Aptitudes, prerequisites, and complete Core Talent catalog
+    equipment_catalog.json      Shared immutable equipment and weapon definitions
+    equipment_catalog.schema.json Formal equipment-catalogue JSON Schema
+    inventory_rules.json          Core carrying-capacity lookup and source metadata
     regiment_options.schema.json Formal JSON Schema (Draft 2020-12)
     owca_regiment_save.schema.json Public regiment-save JSON Schema
     owca_character_save.schema.json Public character-save JSON Schema
@@ -37,6 +40,10 @@ OWCA/
     character_state.gd          Serializable individual inputs
     character_calculator.gd     Character aggregation and validation
     character_advancement_calculator.gd Ordered XP ledger and purchase validation
+    equipment_data_repository.gd Shared equipment validation, search data, and lookup
+    inventory_rules_repository.gd Carrying-capacity data loading and validation
+    character_inventory_service.gd Owned-item mutations and audit events
+    character_inventory_calculator.gd Weight, encumbrance, armour, and definition projection
     interoperability_contract.gd Shared public-schema and extension validation
     document_identity.gd       Durable UUID generation and validation
     atomic_json_store.gd       Validated atomic writes, backups, and recovery
@@ -52,7 +59,12 @@ OWCA/
     RegimentCreator.tscn        Regiment workflow
     character_creator.gd        Guardsman workflow UI/controller
     CharacterCreator.tscn       Guardsman workflow scene
-    printable_character_sheet.gd Original two-page field-dossier drawing
+    armoury_catalogue.gd        Read-only searchable equipment browser
+    ArmouryCatalogue.tscn       Armoury reference scene
+    character_inventory_editor.gd Shared creation and maintenance loadout editor
+    loadout_manager.gd           Saved-character loadout maintenance workflow
+    LoadoutManager.tscn          Standalone loadout scene
+    printable_character_sheet.gd Original paginated field-dossier drawing
     save_recovery_dialog.gd     Explicit interrupted-save recovery prompt
   tests/
     regiment_calculator_test.gd Headless smoke tests
@@ -67,6 +79,12 @@ OWCA/
     interoperability_test.gd   Public JSON contract and compatibility tests
     atomic_json_store_test.gd  Atomic replacement, backup, and recovery tests
     file_safety_ui_test.gd     Save As, Duplicate, lifecycle, and recovery UI contract
+    equipment_catalog_test.gd  Equipment schema, profiles, references, and shared lookup
+    armoury_catalogue_ui_test.gd Armoury search and detail rendering
+    character_inventory_service_test.gd Ownership, reconciliation, history, and lifecycle tests
+    character_inventory_calculator_test.gd Weight, encumbrance, armour, and missing-definition tests
+    inventory_ui_test.gd         Shared editor, landing workflow, and minimum-window tests
+    printable_loadout_test.gd    Printable owned-loadout projection tests
 ```
 
 ## Run
@@ -90,6 +108,12 @@ godot --headless --path . --script res://OWCA/tests/talent_browser_ui_test.gd
 godot --headless --path . --script res://OWCA/tests/interoperability_test.gd
 godot --headless --path . --script res://OWCA/tests/atomic_json_store_test.gd
 godot --headless --path . --script res://OWCA/tests/file_safety_ui_test.gd
+godot --headless --path . --script res://OWCA/tests/equipment_catalog_test.gd
+godot --headless --path . --script res://OWCA/tests/armoury_catalogue_ui_test.gd
+godot --headless --path . --script res://OWCA/tests/character_inventory_service_test.gd
+godot --headless --path . --script res://OWCA/tests/character_inventory_calculator_test.gd
+godot --headless --path . --script res://OWCA/tests/inventory_ui_test.gd
+godot --headless --path . --script res://OWCA/tests/printable_loadout_test.gd
 ```
 
 The character-sheet visual test needs a real renderer because Godot's Windows headless display driver is a dummy. It runs minimized and writes the example output to the path in `OWCA_PDF_OUTPUT`:
@@ -110,9 +134,11 @@ Character creation also provides optional rolls for all nine base Characteristic
 
 The v0.5 development slice expands the ordered starting-XP ledger into a complete Core Talent browser. Its 124 entries and supported specialisations can be searched by name, brief effect, or prerequisite and filtered by Tier, Aptitude, prerequisite state, and purchase state. Every Talent displays its calculated Aptitude-based XP cost, short rules summary, prerequisites, availability reason, and Core Rulebook reference. Specialist, implant-dependent, Psy Rating, and variable Logistics-cost Talents remain visible but are disabled whenever OWCA cannot represent their required choice or state safely.
 
+The v0.6 Armoury remains the immutable definition source. v0.7 turns calculated starting grants into durable owned-item instances. In Create Character, the player-facing Loadout stage is limited to Starting Equipment, Add Optional Equipment, and Review and Finalize: players prepare starting equipment with **Prepare Starting Equipment**, then intact prepared grants reconcile automatically; optional equipment defaults to the character with Common craftsmanship in the carried location, and the stage keeps item profiles, armour, and carried weight concise. Manage Loadout is the detailed maintenance workflow, where players can add, remove, equip, carry, store, transfer, split, reconcile, and annotate equipment; manage custody and provenance; and review audit history. Weapon upgrades and modified profiles remain v0.8.
+
 The character workflow is responsive down to a 960x650 minimum window. Advancement actions remain inside their cards, horizontal stage scrolling is disabled, and the live-summary column automatically hides below 1100 pixels so the active form keeps usable space.
 
-The Review stage can export an original two-page A4 field dossier as one printable PDF plus two 2480x3508 (300-DPI) PNG pages. Page 1 is the table-ready character record; page 2 contains rules, resolved choices, source references, advances, and campaign notes. The PDF is image-based, so its text is not selectable. Open it in a PDF viewer and print at 100% scale on A4 paper.
+The Review stage can export an original A4 field dossier as one printable PDF plus 2480x3508 (300-DPI) PNG pages. Page 1 is the table-ready character record; page 2 contains rules, resolved choices, source references, advances, and campaign notes. Most dossiers use those two pages; unusually large inventories receive full loadout-continuation pages so owned gear is never silently omitted. The PDF is image-based, so its text is not selectable. Open it in a PDF viewer and print at 100% scale on A4 paper.
 
 “War Grinder” plays as OWCA's looping background soundtrack and continues uninterrupted while changing scenes. Use the landing-page music button or press `M` outside a text field to pause or resume it. The default level is deliberately lower than full volume.
 

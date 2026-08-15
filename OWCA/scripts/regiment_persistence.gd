@@ -26,6 +26,7 @@ func save_regiment(path: String, state: RegimentState, repository: RegimentDataR
 		"producer": InteroperabilityContract.build_producer(),
 		"saved_at_utc": Time.get_datetime_string_from_system(true),
 		"rules_content_version": str(repository.data.get("content_version", "unknown")),
+		"equipment_rules_content_version": repository.equipment_repository.get_content_version(),
 		"character_creation_choices": _collect_character_choices(state, repository),
 		"regiment": regiment_data,
 		"calculated_preview": _build_preview(calculation),
@@ -97,6 +98,8 @@ func _build_migration_report(envelope: Dictionary) -> Array[String]:
 		report.append("Added public schema metadata for the next save.")
 	elif str(envelope.get("schema_version", "")) != SCHEMA_VERSION:
 		report.append("Interoperability schema %s will become %s." % [envelope.get("schema_version", "legacy"), SCHEMA_VERSION])
+	if not envelope.has("equipment_rules_content_version"):
+		report.append("Added the shared equipment catalogue version for the next save.")
 	var envelope_version := int(envelope.get("version", 0))
 	if envelope_version < FILE_VERSION:
 		report.append("Regiment envelope v%d will become v%d." % [envelope_version, FILE_VERSION])

@@ -11,6 +11,7 @@ const REGIMENT_ROUNDTRIP_PATH := "user://owca_interop_regiment_roundtrip.owreg.j
 const CHARACTER_PATH := "user://owca_interop_character.owchar.json"
 const CHARACTER_ROUNDTRIP_PATH := "user://owca_interop_character_roundtrip.owchar.json"
 const MUTATED_PATH := "user://owca_interop_mutated.json"
+const InventoryService = preload("res://OWCA/scripts/character_inventory_service.gd")
 
 var _failures := 0
 
@@ -53,6 +54,7 @@ func _test_regiment_contract(repository: RegimentDataRepository) -> void:
 	var envelope := _read_json(REGIMENT_PATH)
 	_assert_equal(envelope.get("format"), RegimentPersistence.FILE_FORMAT, "regiment format discriminator")
 	_assert_equal(envelope.get("schema_version"), RegimentPersistence.SCHEMA_VERSION, "regiment public schema version")
+	_assert_equal(envelope.get("equipment_rules_content_version"), "0.6.0-core-equipment", "regiment records equipment rules version")
 	_assert_equal(envelope.get("version"), RegimentPersistence.FILE_VERSION, "current regiment envelope version")
 	_assert_true(DocumentIdentity.is_valid(str(_nested(envelope, ["regiment", "document_id"]))), "regiment has a durable document ID")
 	_assert_equal(_nested(envelope, ["regiment", "workflow_state"]), RegimentState.WORKFLOW_COMPLETE, "regiment completion state is explicit")
@@ -148,6 +150,10 @@ func _test_character_contract(regiment_repository: RegimentDataRepository, chara
 	state.set_choice("speciality", "operator_knowledge_skill", "common_lore_tech")
 	state.set_choice("speciality", "operator_weapon_training", "las")
 	state.purchase_advance("skill:tech_use")
+	var starting_calculation := CharacterCalculator.new().calculate(state, regiment_repository, character_repository)
+	var inventory_service: RefCounted = InventoryService.new()
+	inventory_service.call("materialize_starting_loadout", state, starting_calculation.get("equipment", []) as Array, character_repository.equipment_repository, "2026-08-09T12:00:00Z")
+	inventory_service.call("finalize_loadout", state, character_repository.equipment_repository, starting_calculation.get("starting_equipment", []) as Array)
 	state.mark_creation_complete()
 	state.interoperability_extensions = {
 		"com.example.combat/character": {
@@ -163,14 +169,20 @@ func _test_character_contract(regiment_repository: RegimentDataRepository, chara
 	var envelope := _read_json(CHARACTER_PATH)
 	_assert_equal(envelope.get("format"), CharacterPersistence.FILE_FORMAT, "character format discriminator")
 	_assert_equal(envelope.get("schema_version"), CharacterPersistence.SCHEMA_VERSION, "character public schema version")
+	_assert_equal(envelope.get("equipment_rules_content_version"), "0.6.0-core-equipment", "character records equipment rules version")
+	_assert_equal(envelope.get("inventory_rules_content_version"), "0.7.0-core-inventory", "character records inventory rules version")
 	_assert_equal(envelope.get("version"), CharacterPersistence.FILE_VERSION, "current character envelope version")
 	_assert_true(DocumentIdentity.is_valid(str(_nested(envelope, ["character", "document_id"]))), "character has a durable document ID")
 	_assert_equal(_nested(envelope, ["character", "workflow_state"]), CharacterState.WORKFLOW_COMPLETE, "character completion state is explicit")
+	_assert_equal(_nested(envelope, ["character", "loadout_state"]), CharacterState.LOADOUT_FINALIZED, "character loadout finalization is explicit")
+	_assert_true((_nested(envelope, ["character", "owned_items"]) as Array).size() > 0, "owned inventory is authoritative")
+	_assert_true((_nested(envelope, ["character", "inventory_events"]) as Array).size() > 0, "inventory audit history is authoritative")
 	_assert_equal(_nested(envelope, ["character", "speciality_id"]), "operator", "Speciality uses a stable ID")
 	_assert_equal(_nested(envelope, ["character", "purchased_advances", 0]), "skill:tech_use", "advancement ledger uses a stable ID")
 	_assert_true((_nested(envelope, ["calculated_preview", "skills"]) as Array).size() > 0, "character preview includes calculated Skills")
 	_assert_true((_nested(envelope, ["calculated_preview", "talents"]) as Array).size() > 0, "character preview includes calculated Talents")
 	_assert_true((_nested(envelope, ["calculated_preview", "equipment"]) as Array).size() > 0, "character preview includes calculated equipment")
+	_assert_true((_nested(envelope, ["calculated_preview", "inventory", "items"]) as Array).size() > 0, "character preview includes calculated inventory")
 
 	# Calculated previews are caches, not an alternate way to modify a character.
 	var mutated := envelope.duplicate(true)
@@ -190,6 +202,7 @@ func _test_character_contract(regiment_repository: RegimentDataRepository, chara
 	duplicate_state.duplicate_identity()
 	_assert_true(duplicate_state.document_id != state.document_id, "Duplicate creates a new character identity")
 	_assert_equal(duplicate_state.workflow_state, CharacterState.WORKFLOW_DRAFT, "Duplicate resets character lifecycle to draft")
+	_assert_true(str(_nested(duplicate_state.to_dict(), ["owned_items", 0, "instance_id"])) != str(_nested(state.to_dict(), ["owned_items", 0, "instance_id"])), "Duplicate regenerates owned item identities")
 	var edited_state := CharacterState.new()
 	_assert_equal(edited_state.from_dict(state.to_dict()), OK, "clone completed character for edit")
 	edited_state.set_base_characteristic("Agility", 31)
@@ -215,6 +228,8 @@ func _test_character_contract(regiment_repository: RegimentDataRepository, chara
 	_assert_true(DocumentIdentity.is_valid(version_two_state.document_id), "version 2 character receives a document ID")
 	_assert_equal(version_two_state.workflow_state, CharacterState.WORKFLOW_DRAFT, "version 2 character safely defaults to draft")
 	_assert_true(_array_contains_fragment(version_two_result.get("migration_report", []) as Array, "document ID"), "character migration report explains generated identity")
+	_assert_equal(version_two_state.loadout_state, CharacterState.LOADOUT_UNPREPARED, "legacy character receives an unprepared loadout")
+	_assert_true(_array_contains_fragment(version_two_result.get("migration_report", []) as Array, "loadout"), "character migration report explains inventory preparation")
 	_assert_equal(version_two_state.regiment.get("version"), RegimentState.SAVE_VERSION, "legacy embedded regiment migrates to the current state version")
 	_assert_true(DocumentIdentity.is_valid(str(version_two_state.regiment.get("document_id", ""))), "legacy embedded regiment receives a document ID")
 	_assert_equal(version_two_state.regiment.get("workflow_state"), RegimentState.WORKFLOW_DRAFT, "legacy embedded regiment safely defaults to draft")
@@ -234,10 +249,144 @@ func _test_character_contract(regiment_repository: RegimentDataRepository, chara
 	_assert_equal(persistence.load_character(MUTATED_PATH, version_one_state).get("error"), OK, "character envelope/state version 1 loads")
 	_assert_true(version_one_state.purchased_advances.is_empty(), "version 1 character defaults to no purchases")
 
+	var version_three_campaign := envelope.duplicate(true)
+	version_three_campaign["version"] = 3
+	var version_three_state_data := version_three_campaign["character"] as Dictionary
+	version_three_state_data["version"] = 3
+	version_three_state_data["workflow_state"] = CharacterState.WORKFLOW_CAMPAIGN
+	for inventory_field in ["comrade", "loadout_state", "starting_loadout", "owned_items", "inventory_events"]:
+		version_three_state_data.erase(inventory_field)
+	_write_json(MUTATED_PATH, version_three_campaign)
+	var migrated_campaign := CharacterState.new()
+	var campaign_result := persistence.load_character(MUTATED_PATH, migrated_campaign)
+	_assert_equal(campaign_result.get("error"), OK, "version 3 campaign character loads")
+	_assert_equal(migrated_campaign.workflow_state, CharacterState.WORKFLOW_DRAFT, "legacy campaign lifecycle returns to draft")
+	_assert_equal(migrated_campaign.loadout_state, CharacterState.LOADOUT_UNPREPARED, "legacy campaign receives an unprepared loadout")
+	_assert_true(_array_contains_fragment(campaign_result.get("migration_report", []) as Array, "Returned the legacy character to draft"), "campaign migration report explains lifecycle reset")
+
 	var invalid_identity := envelope.duplicate(true)
 	(invalid_identity["character"] as Dictionary)["document_id"] = "not-a-document-id"
 	_write_json(MUTATED_PATH, invalid_identity)
 	_assert_equal(persistence.load_character(MUTATED_PATH, CharacterState.new()).get("error"), ERR_INVALID_DATA, "invalid current character document ID is rejected")
+
+	var duplicate_item_id := envelope.duplicate(true)
+	var duplicate_items := _nested(duplicate_item_id, ["character", "owned_items"]) as Array
+	duplicate_items.append((duplicate_items[0] as Dictionary).duplicate(true))
+	_write_json(MUTATED_PATH, duplicate_item_id)
+	_assert_equal(persistence.load_character(MUTATED_PATH, CharacterState.new()).get("error"), ERR_INVALID_DATA, "duplicate owned-item durable IDs are rejected")
+
+	var duplicate_issued_link := envelope.duplicate(true)
+	var duplicate_grants := _nested(duplicate_issued_link, ["character", "starting_loadout"]) as Array
+	(duplicate_grants[1] as Dictionary)["issued_instance_ids"] = ((duplicate_grants[0] as Dictionary).get("issued_instance_ids", []) as Array).duplicate()
+	_write_json(MUTATED_PATH, duplicate_issued_link)
+	_assert_equal(persistence.load_character(MUTATED_PATH, CharacterState.new()).get("error"), ERR_INVALID_DATA, "one issued durable item cannot satisfy two starting grants")
+
+	var missing_present_item := envelope.duplicate(true)
+	var missing_grant := _nested(missing_present_item, ["character", "starting_loadout", 0]) as Dictionary
+	var missing_ids := missing_grant.get("issued_instance_ids", []) as Array
+	var missing_items := _nested(missing_present_item, ["character", "owned_items"]) as Array
+	for index in range(missing_items.size() - 1, -1, -1):
+		if str((missing_items[index] as Dictionary).get("instance_id", "")) in missing_ids:
+			missing_items.remove_at(index)
+	_write_json(MUTATED_PATH, missing_present_item)
+	_assert_equal(persistence.load_character(MUTATED_PATH, CharacterState.new()).get("error"), ERR_INVALID_DATA, "finalized present grants require their issued owned records")
+
+	var insufficient_present_quantity := envelope.duplicate(true)
+	var quantity_grants := _nested(insufficient_present_quantity, ["character", "starting_loadout"]) as Array
+	var quantity_items := _nested(insufficient_present_quantity, ["character", "owned_items"]) as Array
+	for quantity_grant_value: Variant in quantity_grants:
+		var quantity_grant := quantity_grant_value as Dictionary
+		if int(quantity_grant.get("quantity", 0)) <= 1:
+			continue
+		var quantity_ids := quantity_grant.get("issued_instance_ids", []) as Array
+		for quantity_item_value: Variant in quantity_items:
+			var quantity_item := quantity_item_value as Dictionary
+			if str(quantity_item.get("instance_id", "")) in quantity_ids:
+				quantity_item["quantity"] = int(quantity_grant.get("quantity", 0)) - 1
+				break
+		break
+	_write_json(MUTATED_PATH, insufficient_present_quantity)
+	_assert_equal(persistence.load_character(MUTATED_PATH, CharacterState.new()).get("error"), ERR_INVALID_DATA, "finalized present grants require their exact issued quantity")
+
+	var unexplained_reconciliation := envelope.duplicate(true)
+	var unexplained_grant := _nested(unexplained_reconciliation, ["character", "starting_loadout", 0]) as Dictionary
+	unexplained_grant["reconciliation"] = "loss"
+	unexplained_grant["note"] = ""
+	_write_json(MUTATED_PATH, unexplained_reconciliation)
+	_assert_equal(persistence.load_character(MUTATED_PATH, CharacterState.new()).get("error"), ERR_INVALID_DATA, "finalized non-present reconciliations require an explanation")
+
+	for mutation in [
+		["definition_id", "Invalid Definition!", "malformed definition IDs"],
+		["quantity", 0, "nonpositive owned quantities"],
+		["quantity", 1.5, "fractional owned quantities"],
+		["location", "pocket", "invalid owned locations"],
+		["origin", "loot", "invalid owned origins"],
+		["craftsmanship", "Legendary", "invalid craftsmanship"],
+		["note", 7, "malformed item notes"]
+	]:
+		var invalid_item := envelope.duplicate(true)
+		var item := _nested(invalid_item, ["character", "owned_items", 0]) as Dictionary
+		item[str(mutation[0])] = mutation[1]
+		_write_json(MUTATED_PATH, invalid_item)
+		_assert_equal(persistence.load_character(MUTATED_PATH, CharacterState.new()).get("error"), ERR_INVALID_DATA, "%s are rejected" % mutation[2])
+
+	var invalid_owner := envelope.duplicate(true)
+	(_nested(invalid_owner, ["character", "owned_items", 0, "custodian"]) as Dictionary)["type"] = "quartermaster"
+	_write_json(MUTATED_PATH, invalid_owner)
+	_assert_equal(persistence.load_character(MUTATED_PATH, CharacterState.new()).get("error"), ERR_INVALID_DATA, "invalid item custodians are rejected")
+
+	var malformed_comrade := envelope.duplicate(true)
+	(malformed_comrade["character"] as Dictionary)["comrade"] = { "id": "not-a-uuid", "name": "" }
+	_write_json(MUTATED_PATH, malformed_comrade)
+	_assert_equal(persistence.load_character(MUTATED_PATH, CharacterState.new()).get("error"), ERR_INVALID_DATA, "malformed Comrade records are rejected")
+
+	var malformed_timestamp := envelope.duplicate(true)
+	(_nested(malformed_timestamp, ["character", "inventory_events", 0]) as Dictionary)["timestamp_utc"] = "yesterday"
+	_write_json(MUTATED_PATH, malformed_timestamp)
+	_assert_equal(persistence.load_character(MUTATED_PATH, CharacterState.new()).get("error"), ERR_INVALID_DATA, "malformed inventory timestamps are rejected")
+
+	var unrelated_snapshot := envelope.duplicate(true)
+	var event := _nested(unrelated_snapshot, ["character", "inventory_events", 0]) as Dictionary
+	(event.get("item_snapshot", {}) as Dictionary)["definition_id"] = "medikit" if str(event.get("definition_id", "")) != "medikit" else "knife"
+	_write_json(MUTATED_PATH, unrelated_snapshot)
+	_assert_equal(persistence.load_character(MUTATED_PATH, CharacterState.new()).get("error"), ERR_INVALID_DATA, "inventory event snapshots must describe their event")
+
+	var invalid_lifecycle := envelope.duplicate(true)
+	(invalid_lifecycle["character"] as Dictionary)["loadout_state"] = CharacterState.LOADOUT_UNPREPARED
+	_write_json(MUTATED_PATH, invalid_lifecycle)
+	_assert_equal(persistence.load_character(MUTATED_PATH, CharacterState.new()).get("error"), ERR_INVALID_DATA, "completed characters cannot carry an unprepared inventory state")
+
+	var stacked_weapon := envelope.duplicate(true)
+	var stacked_items := _nested(stacked_weapon, ["character", "owned_items"]) as Array
+	for stacked_value: Variant in stacked_items:
+		var candidate := stacked_value as Dictionary
+		var definition := character_repository.equipment_repository.get_item(str(candidate.get("definition_id", "")))
+		if str(definition.get("category", "")) in ["ranged_weapon", "melee_weapon", "armour"]:
+			candidate["quantity"] = 2
+			break
+	_write_json(MUTATED_PATH, stacked_weapon)
+	_assert_equal(persistence.load_character(MUTATED_PATH, CharacterState.new()).get("error"), ERR_INVALID_DATA, "stacked weapons and armour are rejected at load")
+
+	var retired_definition := envelope.duplicate(true)
+	var retired_item := _nested(retired_definition, ["character", "owned_items", 0]) as Dictionary
+	var retired_instance_id := str(retired_item.get("instance_id", ""))
+	retired_item["definition_id"] = "retired_catalogue_item"
+	for retired_grant_value: Variant in _nested(retired_definition, ["character", "starting_loadout"]) as Array:
+		var retired_grant := retired_grant_value as Dictionary
+		if retired_instance_id in (retired_grant.get("issued_instance_ids", []) as Array):
+			retired_grant["definition_id"] = "retired_catalogue_item"
+	for retired_event_value: Variant in _nested(retired_definition, ["character", "inventory_events"]) as Array:
+		var retired_event := retired_event_value as Dictionary
+		if str(retired_event.get("instance_id", "")) == retired_instance_id:
+			retired_event["definition_id"] = "retired_catalogue_item"
+			(retired_event.get("item_snapshot", {}) as Dictionary)["definition_id"] = "retired_catalogue_item"
+	_write_json(MUTATED_PATH, retired_definition)
+	var retired_state := CharacterState.new()
+	var retired_result := persistence.load_character(MUTATED_PATH, retired_state)
+	_assert_equal(retired_result.get("error"), OK, "well-formed IDs missing from a newer catalogue remain recoverable")
+	_assert_equal(retired_state.loadout_state, CharacterState.LOADOUT_DRAFT, "missing catalogue definitions invalidate prior loadout finalization")
+	_assert_equal(retired_state.workflow_state, CharacterState.WORKFLOW_DRAFT, "a newly unresolved finalized loadout returns to draft")
+	_assert_true(_array_contains_fragment(retired_result.get("migration_report", []) as Array, "catalogue definitions are missing"), "missing definition recovery is explained to the player")
 
 	var future := envelope.duplicate(true)
 	future["schema_version"] = "2.0.0"
@@ -259,6 +408,10 @@ func _test_schema_documents() -> void:
 	var character_schema := _read_json("res://OWCA/data/owca_character_save.schema.json")
 	var character_required := (((character_schema.get("$defs", {}) as Dictionary).get("character_state", {}) as Dictionary).get("required", []) as Array)
 	_assert_true("document_id" in character_required and "workflow_state" in character_required, "character schema requires identity and lifecycle")
+	for field_name in ["comrade", "loadout_state", "starting_loadout", "owned_items", "inventory_events"]:
+		_assert_true(field_name in character_required, "character schema requires %s" % field_name)
+	var starting_required := (((character_schema.get("$defs", {}) as Dictionary).get("starting_grant", {}) as Dictionary).get("required", []) as Array)
+	_assert_true("origin" in starting_required, "character schema requires starting-grant provenance")
 
 
 func _test_published_examples(regiment_repository: RegimentDataRepository) -> void:

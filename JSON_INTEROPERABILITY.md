@@ -10,6 +10,7 @@ The contract covers creation data only. It does not define attacks, damage resol
 - Character saves use `.owchar.json` and the `owca_character` format.
 - [OWCA/data/owca_regiment_save.schema.json](OWCA/data/owca_regiment_save.schema.json) is the Draft 2020-12 regiment schema.
 - [OWCA/data/owca_character_save.schema.json](OWCA/data/owca_character_save.schema.json) is the Draft 2020-12 character schema.
+- [OWCA/data/equipment_catalog.json](OWCA/data/equipment_catalog.json) is the shared immutable equipment definition catalogue; its structure is documented by [OWCA/data/equipment_catalog.schema.json](OWCA/data/equipment_catalog.schema.json).
 - [OWCA/examples/13th_varanox_light_infantry.owreg.json](OWCA/examples/13th_varanox_light_infantry.owreg.json) is the example regiment.
 - [OWCA/examples/varanox_weapon_specialist.owchar.json](OWCA/examples/varanox_weapon_specialist.owchar.json) is the example character.
 
@@ -24,7 +25,7 @@ OWCA records three different version concepts because they answer different comp
 | `*_content_version` | Version of the rules catalog used for calculation | Warn when reproducing results with different rules data |
 | `producer.version` | Version of the application that wrote the file | Diagnostic only; do not use it instead of `schema_version` |
 
-OWCA v0.5.1 writes interoperability schema `1.1.0`. Saves made before v0.5.1 do not have `schema_version`; OWCA treats them as legacy files and continues to load supported envelope/state versions.
+OWCA v0.7.0 writes interoperability schema `1.3.0`. It adds authoritative character inventory, Comrade identity, loadout reconciliation, and inventory audit records. It also records `inventory_rules_content_version` for the carrying-capacity table. OWCA continues to load compatible 1.x files and legacy saves without `schema_version`.
 
 ## Authoritative inputs and calculated previews
 
@@ -49,12 +50,14 @@ authoritative selections + compatible rules data -> fresh calculated result
 | `schema_version` | Yes for v0.5.1+ | Public interoperability contract version |
 | `producer` | No | Writing application name and version |
 | `saved_at_utc` | No | Informational UTC save timestamp |
+| `equipment_rules_content_version` | Yes for v0.6.0+ writes | Shared equipment catalogue used for names and profile definitions |
+| `inventory_rules_content_version` | Yes for v0.7.0+ character writes | Carrying-capacity rules used for encumbrance previews |
 | `calculated_preview` | No | Disposable derived result cache |
 | `extensions` | No | Opaque namespaced data owned by other tools |
 
 Unknown top-level fields are allowed so readers can tolerate additive contract changes. OWCA does not promise to preserve arbitrary unknown fields. Use `extensions` for data that must survive an OWCA load/save cycle.
 
-Current regiment envelopes use numeric version `2`; current character envelopes use version `3`. Supported older envelope versions are migration inputs, not examples of the current write contract.
+Current regiment envelopes use numeric version `2`; current character envelopes use version `4`. Supported older envelope versions are migration inputs, not examples of the current write contract.
 
 ## Regiment authoritative state
 
@@ -85,7 +88,7 @@ The top-level `character` object contains:
 
 | Field | Required | Description |
 | --- | --- | --- |
-| `version` | Yes | Character state migration version; currently `3` |
+| `version` | Yes | Character state migration version; currently `4` |
 | `document_id` | Yes | Durable UUID identifying the character record |
 | `workflow_state` | Yes | `draft`, `creation_complete`, or the reserved `campaign_active` state |
 | `name`, `player_name` | Yes | Player-entered identity fields |
@@ -98,17 +101,28 @@ The top-level `character` object contains:
 | `speciality_resolutions` | Yes | Answers to Speciality choice IDs |
 | `wounds_roll`, `fate_roll` | Yes | Accepted raw creation dice, or `0` while unresolved |
 | `purchased_advances` | Yes | Ordered stable advancement IDs |
+| `comrade` | Yes | Minimal durable Comrade ID and player-facing name |
+| `loadout_state` | Yes | `unprepared`, `draft`, or `finalized` |
+| `starting_loadout` | Yes | Calculated starting grants, issue provenance, issued instance IDs, and reconciliation state |
+| `owned_items` | Yes | Authoritative durable equipment instances and stacks |
+| `inventory_events` | Yes | Append-only issue, acquisition, quantity, transfer, loss, exchange, and correction audit entries |
 
 Purchase order is meaningful. Advancement IDs such as `skill:dodge` or `talent:rapid_reload` must be replayed in order because costs, ranks, affordability, and prerequisites can depend on earlier entries.
 
-Lifecycle state is explicit, not inferred from the current calculated preview. Editing a completed creation input reopens the record as a draft. `campaign_active` is reserved by the schema for the v0.9 campaign-advancement workflow.
+Lifecycle state is explicit, not inferred from the current calculated preview. Editing a completed creation input reopens the record as a draft and invalidates its finalized loadout until starting grants match the newly calculated package. OWCA can rebuild obsolete starting-issue records while preserving later acquisitions and recording corrections. Ordinary inventory maintenance after creation does not reopen character creation. `campaign_active` is reserved by the schema for the v0.9 campaign-advancement workflow.
+
+Each starting grant retains its `standard_issue` or `speciality_issue` origin, the durable item IDs issued for it, and an explicit reconciliation value: `present`, `exchange`, `loss`, `transfer`, `correction`, or `unresolved`. A grant marked present must still contain its full issued quantity; any other resolution needs a short player explanation before finalization. Equal definition totals with different issue origins are not interchangeable.
+
+Each owned item uses a durable `instance_id` and immutable catalogue `definition_id`. Weapons and armour are quantity-one records; stackable ammunition and ordinary gear may use a positive quantity. Location is `equipped`, `carried`, or `stored`; custody belongs to the character, squad, or the character's declared Comrade. An unresolved definition remains authoritative and visible, but blocks finalization rather than being deleted.
+
+Current owned inventory is authoritative. `inventory_events` provide an audit trail and are not an event-sourced combat simulation. Calculated names, weapon profiles, armour by location, and encumbrance belong only in `calculated_preview`.
 
 ## Document identity, Save As, and Duplicate
 
 `document_id` is the stable identity of a regiment or character record. Consumers should use it when matching the same record across renamed or relocated files.
 
 - **Save As** changes the destination path and preserves `document_id`.
-- **Duplicate** creates a new `document_id` and resets the duplicated record to `draft`.
+- **Duplicate** creates new character, Comrade, item-instance, and event IDs and resets the duplicated record and loadout to `draft`.
 - Display names and filenames are not identity keys.
 
 An embedded regiment snapshot inside a character retains the regiment document ID that supplied it. The character has its own separate document ID.
@@ -173,6 +187,6 @@ Use a domain, project ID, or similarly controlled prefix before the slash. Value
 
 Patch and minor schema releases may add optional fields, preview fields, or new extension guidance without changing existing meaning. A schema major release is required for incompatible field removal, a type change, a semantic change, or reassignment of an existing stable ID.
 
-OWCA's loader accepts legacy regiment state v1 and current v2, plus character state v1/v2 and current v3. Character state v1 is migrated with an empty advancement ledger. Legacy records receive a generated document ID and safely default to `draft`; the migration report tells the player to validate and complete them again. A future reader should preserve the same principle: default absent newer fields only when the old meaning is unambiguous, and reject malformed containers rather than guessing.
+OWCA's loader accepts legacy regiment state v1 and current v2, plus character state v1–v3 and current v4. Character state v1 is migrated with an empty advancement ledger. Every character v1–v3 record receives an empty inventory, an `unprepared` loadout, and a `draft` lifecycle so its starting grants can be prepared and finalized. Legacy records receive a generated document ID when necessary, and the migration report describes every lifecycle decision. A future reader should preserve the same principle: default absent newer fields only when the old meaning is unambiguous, and reject malformed containers rather than guessing.
 
 The executable compatibility suite is [OWCA/tests/interoperability_test.gd](OWCA/tests/interoperability_test.gd). Any save-contract change must update the schemas, examples, this document, and both round-trip and backwards-compatibility tests.

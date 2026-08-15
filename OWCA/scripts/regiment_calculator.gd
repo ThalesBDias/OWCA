@@ -233,6 +233,8 @@ func _apply_equipment(entries: Array, result: Dictionary, repository: RegimentDa
 			output["name"] = repository.get_catalog_name("equipment", item_id)
 			if not output.has("tags") and catalog.has("tags"):
 				output["tags"] = (catalog.get("tags", []) as Array).duplicate()
+			elif not output.has("tags") and str(catalog.get("category", "")) == "grenade_missile" and item_id.ends_with("_grenade"):
+				output["tags"] = ["grenade"]
 			if catalog.has("ammunition_id"):
 				output["ammunition_id"] = str(catalog["ammunition_id"])
 			output["quantity"] = quantity
