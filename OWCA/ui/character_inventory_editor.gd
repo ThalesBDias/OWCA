@@ -47,7 +47,8 @@ func _rebuild() -> void:
 
 
 func _rebuild_creation() -> void:
-	var starting_equipment := _named_section("CreationStartingEquipment", "STARTING EQUIPMENT")
+	var starting_equipment := VBoxContainer.new()
+	starting_equipment.name = "CreationStartingEquipment"
 	add_child(starting_equipment)
 	_build_creation_starting_equipment(starting_equipment)
 	var optional_equipment := _named_section("CreationOptionalEquipment", "ADD OPTIONAL EQUIPMENT")
@@ -164,13 +165,8 @@ func _build_creation_starting_equipment(parent: VBoxContainer) -> void:
 			var entry := entry_value as Dictionary
 			var owned := entry.get("owned", {}) as Dictionary
 			var resolved := entry.get("resolved", {}) as Dictionary
-			var definition := entry.get("definition", {}) as Dictionary
 			var item := VBoxContainer.new()
-			item.add_child(_label("%dx %s" % [int(owned.get("quantity", 1)), str(resolved.get("name", definition.get("name", owned.get("definition_id", "Item"))))]))
-			var profile := _creation_item_profile(definition)
-			if not profile.is_empty():
-				item.add_child(_label(profile))
-			item.add_child(_label("STARTING EQUIPMENT"))
+			item.add_child(_label(_creation_item_label(owned, resolved)))
 			parent.add_child(item)
 
 
@@ -206,11 +202,7 @@ func _build_creation_optional_equipment(parent: VBoxContainer) -> void:
 
 func _build_creation_item_card(owned: Dictionary, resolved: Dictionary, removable: bool) -> Control:
 	var item := VBoxContainer.new()
-	item.add_child(_label("%dx %s" % [int(owned.get("quantity", 1)), str(resolved.get("name", owned.get("definition_id", "Item")))]))
-	var profile := _creation_item_profile(resolved)
-	if not profile.is_empty():
-		item.add_child(_label(profile))
-	item.add_child(_label("OPTIONAL ADDITION"))
+	item.add_child(_label(_creation_item_label(owned, resolved)))
 	if removable:
 		var remove := Button.new()
 		remove.name = "CreationOptionalRemoveButton"
@@ -249,45 +241,12 @@ func _creation_group_for_category(category: String) -> String:
 			return "GEAR"
 
 
-func _creation_item_profile(definition: Dictionary) -> String:
-	var profile := definition.get("profile", {}) as Dictionary
-	if not profile.is_empty():
-		var details: Array[String] = []
-		if profile.has("class"):
-			details.append("Class %s" % profile.get("class", "-"))
-		if profile.has("range_m"):
-			details.append("Range %s m" % _format_profile_number(profile.get("range_m", "-")))
-		elif profile.has("range_text"):
-			details.append("Range %s" % profile.get("range_text", "-"))
-		if profile.has("rate_of_fire"):
-			details.append("RoF %s" % profile.get("rate_of_fire", "-"))
-		if profile.has("damage"):
-			details.append("Damage %s" % profile.get("damage", "-"))
-		if profile.has("penetration"):
-			details.append("Pen %s" % _format_profile_number(profile.get("penetration", "-")))
-		if profile.has("magazine"):
-			details.append("Magazine %s" % _format_profile_number(profile.get("magazine", "-")))
-		if profile.has("reload"):
-			details.append("Reload %s" % profile.get("reload", "-"))
-		var qualities := profile.get("qualities", []) as Array
-		if not qualities.is_empty():
-			details.append("Qualities %s" % ", ".join(qualities))
-		return " | ".join(details)
-	var armour := definition.get("armour", {}) as Dictionary
-	if not armour.is_empty():
-		return "Armour AP %s" % armour.get("ap", "-")
-	var summary := str(definition.get("summary", ""))
-	if not summary.is_empty():
-		return summary
-	return "%s | %s" % [str(definition.get("category", "equipment")).replace("_", " ").capitalize(), str(definition.get("availability", "Standard issue"))]
-
-
-func _format_profile_number(value: Variant) -> String:
-	if value is float:
-		var numeric := float(value)
-		if is_equal_approx(numeric, round(numeric)):
-			return str(int(numeric))
-	return str(value)
+func _creation_item_label(owned: Dictionary, resolved: Dictionary) -> String:
+	var name := str(resolved.get("name", owned.get("definition_id", "Item")))
+	var quantity := int(owned.get("quantity", 1))
+	if quantity > 1:
+		return "%dx %s" % [quantity, name]
+	return name
 
 
 func _rebuild_maintenance() -> void:
@@ -427,11 +386,14 @@ func _build_catalogue_add_controls(parent: VBoxContainer, add_button_label: Stri
 	add_button.pressed.connect(_add_selected_item)
 	add_row.add_child(add_button)
 	parent.add_child(add_row)
-	catalogue_details = RichTextLabel.new()
-	catalogue_details.bbcode_enabled = true
-	catalogue_details.fit_content = true
-	catalogue_details.custom_minimum_size.y = 76
-	parent.add_child(catalogue_details)
+	if presentation_mode == MODE_MAINTENANCE:
+		catalogue_details = RichTextLabel.new()
+		catalogue_details.bbcode_enabled = true
+		catalogue_details.fit_content = true
+		catalogue_details.custom_minimum_size.y = 76
+		parent.add_child(catalogue_details)
+	else:
+		catalogue_details = null
 	_refresh_catalogue_matches()
 
 
@@ -451,9 +413,24 @@ func _refresh_catalogue_matches() -> void:
 		if not query.is_empty() and query not in _search_text(item):
 			continue
 		_catalogue_matches.append(item)
-	_catalogue_matches.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return str(a.get("name", "")) < str(b.get("name", "")))
+	if presentation_mode == MODE_CREATION:
+		_catalogue_matches.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+			var a_is_variant := a.has("base_definition_id")
+			var b_is_variant := b.has("base_definition_id")
+			if a_is_variant != b_is_variant:
+				return not a_is_variant
+			return str(a.get("name", "")) < str(b.get("name", ""))
+		)
+	else:
+		_catalogue_matches.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return str(a.get("name", "")) < str(b.get("name", "")))
 	for item: Dictionary in _catalogue_matches:
-		catalogue_selector.add_item("%s  [%s]" % [item.get("name", item.get("id", "Item")), str(item.get("category", "")).replace("_", " ").capitalize()])
+		var selector_text := str(item.get("name", item.get("id", "Item")))
+		if presentation_mode == MODE_MAINTENANCE:
+			selector_text = "%s  [%s]" % [
+				selector_text,
+				str(item.get("category", "")).replace("_", " ").capitalize()
+			]
+		catalogue_selector.add_item(selector_text)
 	_render_catalogue_details()
 
 

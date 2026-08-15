@@ -296,20 +296,25 @@ func _run() -> void:
 	_assert_true(_find_named(creation_editor, "OwnedCustodianFilter") == null, "creation mode hides custody administration")
 	_assert_true(_find_named(creation_editor, "StartingGrantReconciliation") == null, "creation mode hides reconciliation values")
 	_assert_true(_find_text(creation_editor, "RECENT INVENTORY HISTORY") == null, "creation mode hides audit history")
-	_assert_true(_find_text_contains(creation_editor, "Class Pistol | Range 30 m | RoF S/2/- | Damage 1d10+2 E | Pen 0 | Magazine 30 | Reload Half | Qualities Reliable") != null, "prepared starting weapon card shows the complete concise profile")
+	_assert_true(_find_text(creation_editor, "Laspistol") != null, "single starting items show their name without a redundant quantity")
+	_assert_true(_find_text(creation_editor, "4x Charge pack") != null, "stacked starting items show quantity and name")
+	_assert_true(_find_text_contains(creation_editor, "Class Pistol") == null, "creation starting rows hide weapon profiles")
+	_assert_true(_find_text(creation_editor, "STARTING EQUIPMENT") == null, "creation rows do not repeat their enclosing section")
 	var creation_catalogue_search := creation_editor.get("catalogue_search") as LineEdit
 	var creation_catalogue_details := creation_editor.get("catalogue_details") as RichTextLabel
+	var creation_catalogue_selector := creation_editor.get("catalogue_selector") as OptionButton
 	var creation_inventory_messages: Array[String] = []
 	var creation_completion_messages: Array[String] = []
 	creation_editor.connect("inventory_changed", func(message: String) -> void: creation_inventory_messages.append(message))
 	creation_editor.connect("creation_finished", func(message: String) -> void: creation_completion_messages.append(message))
-	_assert_true(creation_catalogue_search != null and creation_catalogue_details != null, "creation mode exposes searchable optional equipment")
-	if creation_catalogue_search != null and creation_catalogue_details != null:
+	_assert_true(creation_catalogue_search != null and creation_catalogue_selector != null, "creation mode exposes searchable optional equipment")
+	if creation_catalogue_search != null and creation_catalogue_selector != null:
 		creation_catalogue_search.text = "m36 lasgun"
 		creation_catalogue_search.text_changed.emit(creation_catalogue_search.text)
 		await process_frame
-		for field_name in ["Damage", "Pen", "Range", "RoF", "Magazine", "Reload", "Qualities"]:
-			_assert_true(field_name in creation_catalogue_details.text, "creation weapon details include %s" % field_name)
+		_assert_true(creation_catalogue_details == null, "creation mode omits the selected-item detail panel")
+		_assert_equal(creation_catalogue_selector.get_item_text(creation_catalogue_selector.selected), "M36 lasgun", "creation selector presents only the item name")
+		_assert_true(_find_button(creation_editor, "ADD EQUIPMENT") != null, "creation keeps the Add Equipment action")
 	var owned_item_count := prepared_state.owned_items.size()
 	creation_editor.call("_add_selected_item")
 	_assert_equal(prepared_state.owned_items.size(), owned_item_count + 1, "creation adds one selected optional item")
@@ -345,7 +350,9 @@ func _run() -> void:
 		_assert_true(creation_add.get_global_rect().position.y >= creation_selector.get_global_rect().end.y - 0.5, "creation add action stacks below selector in a narrow panel")
 	var optional_remove := _find_named(optional_section, "CreationOptionalRemoveButton") as Button
 	_assert_true(optional_remove != null, "creation optional additions expose a remove action")
-	_assert_true(_find_text_contains(optional_section, "Class Basic | Range 100 m | RoF S/3/- | Damage 1d10+3 E | Pen 0 | Magazine 60 | Reload Full | Qualities Reliable") != null, "optional weapon card shows the complete concise profile")
+	_assert_true(_find_text(optional_section, "M36 lasgun") != null, "single optional items show only their name")
+	_assert_true(_find_text_contains(optional_section, "Class Basic") == null, "optional rows hide weapon profiles")
+	_assert_true(_find_text(optional_section, "OPTIONAL ADDITION") == null, "optional rows do not repeat their enclosing section")
 	if optional_remove != null:
 		var optional_count_before_removal := prepared_state.owned_items.size()
 		optional_remove.pressed.emit()
@@ -353,7 +360,6 @@ func _run() -> void:
 	_assert_true(_find_named(starting_section, "CreationOptionalRemoveButton") == null, "starting equipment remains protected from optional removal")
 	for group_name in ["WEAPONS", "ARMOUR", "AMMUNITION", "GEAR"]:
 		_assert_true(_find_text(optional_editor, group_name) != null, "prepared starting equipment groups %s for players" % group_name)
-	_assert_true(_find_text(optional_editor, "Wargear | Standard issue") != null, "Uniform has a concise player-facing starting-equipment profile")
 	_assert_true(_find_button(starting_section, "REMOVE") == null, "starting equipment entries cannot be removed during creation")
 	_assert_interactive_controls_fit_width(optional_editor, 960.0)
 	optional_editor.queue_free()
