@@ -12,7 +12,7 @@ func _init() -> void:
 	_assert_true(load("res://OWCA/scripts/character_inventory_calculator.gd") != null, "inventory calculator is available")
 	_test_capacity_boundaries()
 	_test_capacity_data_rejects_duplicate_rows()
-	_test_location_weight_and_partial_totals()
+	_test_location_weight_and_source_omissions()
 	_test_armour_uses_highest_equipped_ap()
 	_test_missing_definitions_remain_visible()
 
@@ -50,7 +50,7 @@ func _test_capacity_data_rejects_duplicate_rows() -> void:
 	_assert_equal(rules.call("load_data", fixture_path), ERR_INVALID_DATA, "duplicate carrying-capacity rows are rejected")
 
 
-func _test_location_weight_and_partial_totals() -> void:
+func _test_location_weight_and_source_omissions() -> void:
 	var equipment := EquipmentDataRepository.new()
 	equipment.load_data()
 	var rules: RefCounted = RulesRepository.new()
@@ -67,10 +67,11 @@ func _test_location_weight_and_partial_totals() -> void:
 		_item("medikit", 1, "carried", "squad")
 	]
 	var result: Dictionary = calculator.call("calculate", state, { "characteristic_bonuses": { "Strength": 3, "Toughness": 3 } }, equipment, rules)
-	_assert_equal(_nested(result, ["encumbrance", "known_weight_kg"]), 13.0, "equipped and carried character gear contributes known weight")
+	_assert_equal(_nested(result, ["encumbrance", "known_weight_kg"]), 13.0, "source-omitted weight contributes zero")
 	_assert_equal(_nested(result, ["encumbrance", "carrying_limit_kg"]), 36.0, "SB+TB selects the carrying table row")
-	_assert_equal(_nested(result, ["encumbrance", "status"]), "partial", "unweighted carried ammunition prevents a certainty claim")
-	_assert_equal((result.get("unknown_weight_items", []) as Array).size(), 1, "unknown-weight carried entries are reported")
+	_assert_equal(_nested(result, ["encumbrance", "status"]), "within_limit", "source-omitted weight does not make the total partial")
+	_assert_true(bool(_nested(result, ["encumbrance", "complete"])), "valid definitions produce a complete total")
+	_assert_equal((result.get("unknown_weight_items", []) as Array).size(), 0, "valid unweighted definitions are not unresolved weight entries")
 
 
 func _test_armour_uses_highest_equipped_ap() -> void:
@@ -103,6 +104,8 @@ func _test_missing_definitions_remain_visible() -> void:
 	_assert_equal((result.get("unresolved_items", []) as Array).size(), 1, "missing definition remains unresolved")
 	_assert_true(not bool(result.get("valid", true)), "missing definition blocks loadout validity")
 	_assert_true(str(_nested(result, ["items", 0, "name"])).contains("missing_catalogue_item"), "missing definition remains visible by stable ID")
+	_assert_equal((result.get("unknown_weight_items", []) as Array).size(), 1, "a carried missing definition still prevents a complete weight projection")
+	_assert_equal(_nested(result, ["encumbrance", "status"]), "partial", "missing carried definition remains a partial total")
 	var stored_state := CharacterState.new()
 	stored_state.owned_items = [_item("missing_stored_item", 1, "stored", "character")]
 	var stored_result: Dictionary = calculator.call("calculate", stored_state, { "characteristic_bonuses": { "Strength": 3, "Toughness": 3 } }, equipment, rules)

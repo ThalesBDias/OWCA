@@ -40,10 +40,7 @@ func calculate(state: CharacterState, character_calculation: Dictionary, equipme
 		item["category"] = str(definition.get("category", ""))
 		(result["items"] as Array).append(item)
 		if affects_character and carried:
-			if definition.has("weight_kg"):
-				known_weight += float(definition.get("weight_kg", 0.0)) * float(owned.get("quantity", 1))
-			else:
-				(result["unknown_weight_items"] as Array).append(item.duplicate(true))
+			known_weight += float(definition.get("weight_kg", 0.0)) * float(owned.get("quantity", 1))
 		if affects_character and str(owned.get("location", "")) == "equipped" and definition.has("armour"):
 			_apply_armour(result["armour_by_location"] as Dictionary, owned, definition)
 	var bonuses := character_calculation.get("characteristic_bonuses", {}) as Dictionary
@@ -69,7 +66,7 @@ func calculate(state: CharacterState, character_calculation: Dictionary, equipme
 		"status": status
 	}
 	if not complete:
-		(result["warnings"] as Array).append("Carried weight is partial because one or more items have no verified weight.")
+		(result["warnings"] as Array).append("Carried weight cannot be completed because an owned item has no catalogue definition.")
 	return result
 
 
