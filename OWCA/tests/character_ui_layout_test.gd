@@ -35,6 +35,26 @@ func _run() -> void:
 		await process_frame
 		_assert_roll_buttons_fit(creator, test_size)
 
+	root.size = Vector2i(960, 650)
+	var character_repository := creator.get("character_repository") as CharacterDataRepository
+	var regiment_repository := creator.get("regiment_repository") as RegimentDataRepository
+	var finalization_state := CharacterState.new()
+	var grants: Array = [{ "id": "knife", "quantity": 1, "scope": "per_character" }]
+	CharacterInventoryService.new().materialize_starting_loadout(finalization_state, grants, character_repository.equipment_repository, "2026-08-15T13:00:00Z")
+	var finalization_calculation := CharacterCalculator.new().calculate(finalization_state, regiment_repository, character_repository)
+	finalization_calculation["valid"] = true
+	finalization_calculation["errors"] = []
+	finalization_calculation["unresolved_choices"] = []
+	finalization_calculation["starting_equipment"] = grants
+	creator.set("state", finalization_state)
+	creator.set("calculation", finalization_calculation)
+	creator.call("_select_stage", "loadout")
+	await process_frame
+	_assert_creation_finalize_fits(creator)
+
+	creator.set("state", CharacterState.new())
+	creator.call("_refresh")
+	await process_frame
 	creator.call("_select_stage", "review")
 	await process_frame
 	var export_button := _find_button(creator.get("stage_content") as Node, "EXPORT A4 PDF + PNG")
@@ -89,6 +109,17 @@ func _assert_loadout_stage_navigation_fits(creator: Control, test_size: Vector2i
 	_assert_true(status_label != null and loadout_button.get_global_rect().end.y < status_label.get_global_rect().position.y, "Loadout stage remains above the bottom status panel at %s" % test_size)
 
 
+func _assert_creation_finalize_fits(creator: Control) -> void:
+	var content_panel := creator.get("content_panel") as Control
+	var finalize := _find_named(creator.get("stage_content") as Node, "FinalizeAndContinueButton") as Button
+	_assert_true(finalize != null and not finalize.disabled, "creation Loadout stage exposes an enabled finalization action at 960x650")
+	if finalize != null and content_panel != null:
+		var content_rect := content_panel.get_global_rect()
+		var finalize_rect := finalize.get_global_rect()
+		_assert_true(finalize_rect.position.x >= content_rect.position.x - 1.0, "creation finalization action begins inside the content panel at 960x650")
+		_assert_true(finalize_rect.end.x <= content_rect.end.x + 1.0, "creation finalization action ends inside the content panel at 960x650")
+
+
 func _collect_roll_buttons(node: Node, output: Array[Button]) -> void:
 	for child in node.get_children():
 		if child is Button and str((child as Button).text).begins_with("ROLL"):
@@ -101,6 +132,18 @@ func _find_button(node: Node, exact_text: String) -> Button:
 		if child is Button and (child as Button).text == exact_text:
 			return child as Button
 		var nested := _find_button(child, exact_text)
+		if nested != null:
+			return nested
+	return null
+
+
+func _find_named(node: Node, node_name: String) -> Node:
+	if node == null:
+		return null
+	if node.name == node_name:
+		return node
+	for child in node.get_children():
+		var nested := _find_named(child, node_name)
 		if nested != null:
 			return nested
 	return null

@@ -121,25 +121,125 @@ func _run() -> void:
 	_assert_true(_find_text_contains(finalization_editor, "unprepared") == null, "creation mode hides raw unprepared state")
 	_assert_true(_find_text_contains(finalization_editor, "reconciliation") == null, "creation mode hides reconciliation terminology")
 	var completion_messages: Array[String] = []
+	var finalization_inventory_messages: Array[String] = []
 	finalization_editor.connect("creation_finished", func(message: String) -> void: completion_messages.append(message))
+	finalization_editor.connect("inventory_changed", func(message: String) -> void: finalization_inventory_messages.append(message))
 	if finalize != null:
 		finalize.pressed.emit()
 		await process_frame
 	_assert_true(not completion_messages.is_empty(), "creation finalization emits its completion signal")
+	_assert_true(finalization_inventory_messages.is_empty(), "successful creation finalization does not emit an inventory refresh")
 	_assert_equal(finalization_state.loadout_state, CharacterState.LOADOUT_FINALIZED, "creation finalization updates the loadout state")
 	finalization_editor.queue_free()
+	await process_frame
+
+	var continue_editor := editor_script.new() as VBoxContainer
+	root.add_child(continue_editor)
+	continue_editor.call("configure", finalization_state, finalization_calculation, repository, &"creation")
+	await process_frame
+	var continue_button := _find_named(continue_editor, "FinalizeAndContinueButton") as Button
+	_assert_true(continue_button != null and continue_button.text == "CONTINUE TO REVIEW" and not continue_button.disabled, "finalized creation loadouts offer an enabled Review continuation")
+	var continue_messages: Array[String] = []
+	var continue_inventory_messages: Array[String] = []
+	var finalized_state_changes: Array[int] = []
+	continue_editor.connect("creation_finished", func(message: String) -> void: continue_messages.append(message))
+	continue_editor.connect("inventory_changed", func(message: String) -> void: continue_inventory_messages.append(message))
+	finalization_state.changed.connect(func() -> void: finalized_state_changes.append(1))
+	if continue_button != null:
+		continue_button.pressed.emit()
+		await process_frame
+	_assert_equal(continue_messages, ["Loadout is ready for review."], "already-finalized continuation emits the completion message")
+	_assert_true(continue_inventory_messages.is_empty(), "already-finalized continuation does not emit an inventory refresh")
+	_assert_true(finalized_state_changes.is_empty(), "already-finalized continuation does not finalize the loadout again")
+	continue_editor.queue_free()
 	await process_frame
 
 	var transition_creator := creator_scene.instantiate() as Control
 	root.add_child(transition_creator)
 	await process_frame
-	transition_creator.call("_on_creation_loadout_finished", "Loadout finalized.")
+	transition_creator.call("_select_stage", "loadout")
+	await process_frame
+	var transition_content := transition_creator.get("stage_content") as VBoxContainer
+	var transition_editor := transition_content.get_child(0) as VBoxContainer
+	transition_editor.emit_signal("creation_finished", "Loadout finalized.")
 	await process_frame
 	_assert_equal(transition_creator.get("active_stage"), "review", "creation completion moves directly to Review")
 	var transition_stage_buttons := transition_creator.get("stage_buttons") as Dictionary
 	var review_stage := transition_stage_buttons.get("review") as Button
 	_assert_true(review_stage != null and review_stage.button_pressed, "creation completion presses the Review stage")
+	var transition_summary := transition_creator.get("summary_text") as RichTextLabel
+	var transition_status := transition_creator.get("status_label") as Label
+	var transition_review := transition_creator.get("stage_content") as VBoxContainer
+	_assert_true(_find_text_contains(transition_review, "Lifecycle:") == null, "Review hides the raw lifecycle heading")
+	_assert_true(_find_button(transition_review, "REOPEN AS DRAFT") == null, "Review hides the raw draft action")
+	_assert_true("Lifecycle:" not in transition_summary.text and "draft" not in transition_summary.text.to_lower() and "creation_complete" not in transition_summary.text.to_lower(), "live summary hides raw lifecycle jargon")
+	_assert_true("draft" not in transition_status.text.to_lower() and "creation_complete" not in transition_status.text.to_lower() and "_" not in transition_status.text, "status display hides raw lifecycle jargon")
+	for stage_button: Button in transition_stage_buttons.values():
+		_assert_true("draft" not in stage_button.text.to_lower() and "creation_complete" not in stage_button.text.to_lower() and "_" not in stage_button.text, "stage labels hide raw lifecycle jargon")
+	var transition_state := transition_creator.get("state") as CharacterState
+	for workflow_case in [
+		[CharacterState.WORKFLOW_DRAFT, "character creation in progress"],
+		[CharacterState.WORKFLOW_COMPLETE, "character creation complete"],
+		[CharacterState.WORKFLOW_CAMPAIGN, "campaign active"],
+		["unexpected_state", "needs attention"]
+	]:
+		transition_state.workflow_state = str(workflow_case[0])
+		transition_creator.call("_refresh")
+		await process_frame
+		var player_label := str(workflow_case[1])
+		_assert_true(player_label in transition_summary.text, "%s uses a player-facing summary status" % workflow_case[0])
+		_assert_true(player_label.to_upper() in transition_status.text, "%s uses a player-facing status display" % workflow_case[0])
+		_assert_true(_find_text_contains(transition_review, "Lifecycle:") == null, "%s hides raw lifecycle text in Review" % workflow_case[0])
 	transition_creator.queue_free()
+	await process_frame
+
+	var missing_definition_state := CharacterState.new()
+	inventory_service.materialize_starting_loadout(missing_definition_state, starting_grants, repository.equipment_repository, "2026-08-15T12:15:00Z")
+	missing_definition_state.owned_items[0]["definition_id"] = "retired_item"
+	var missing_definition_calculation := CharacterCalculator.new().calculate(missing_definition_state, regiment_repository, repository)
+	missing_definition_calculation["starting_equipment"] = starting_grants.duplicate(true)
+	var missing_definition_editor := editor_script.new() as VBoxContainer
+	root.add_child(missing_definition_editor)
+	missing_definition_editor.call("configure", missing_definition_state, missing_definition_calculation, repository, &"creation")
+	await process_frame
+	var missing_definition_finalize := _find_named(missing_definition_editor, "FinalizeAndContinueButton") as Button
+	_assert_true(_find_text_contains(missing_definition_editor, "One owned item is no longer available in the equipment catalogue.") != null, "missing definitions show the creation blocker")
+	_assert_true(missing_definition_finalize != null and missing_definition_finalize.disabled, "missing definitions disable creation finalization")
+	missing_definition_editor.queue_free()
+	await process_frame
+
+	var mismatch_state := CharacterState.new()
+	inventory_service.materialize_starting_loadout(mismatch_state, starting_grants, repository.equipment_repository, "2026-08-15T12:20:00Z")
+	var mismatch_calculation := CharacterCalculator.new().calculate(mismatch_state, regiment_repository, repository)
+	mismatch_calculation["valid"] = true
+	mismatch_calculation["errors"] = []
+	mismatch_calculation["unresolved_choices"] = []
+	mismatch_calculation["starting_equipment"] = [{ "id": "knife", "quantity": 1, "scope": "per_character" }]
+	var mismatch_editor := editor_script.new() as VBoxContainer
+	root.add_child(mismatch_editor)
+	mismatch_editor.call("configure", mismatch_state, mismatch_calculation, repository, &"creation")
+	await process_frame
+	var mismatch_finalize := _find_named(mismatch_editor, "FinalizeAndContinueButton") as Button
+	_assert_true(_find_text_contains(mismatch_editor, "Starting equipment changed after an earlier character choice. Restore it before finalizing.") != null, "changed starting grants show the restore blocker")
+	_assert_true(mismatch_finalize != null and mismatch_finalize.disabled, "changed starting grants disable creation finalization")
+	mismatch_editor.queue_free()
+	await process_frame
+
+	var invalid_state := CharacterState.new()
+	inventory_service.materialize_starting_loadout(invalid_state, starting_grants, repository.equipment_repository, "2026-08-15T12:25:00Z")
+	var invalid_calculation := CharacterCalculator.new().calculate(invalid_state, regiment_repository, repository)
+	invalid_calculation["valid"] = false
+	invalid_calculation["errors"] = ["Character choices remain incomplete."]
+	invalid_calculation["unresolved_choices"] = []
+	invalid_calculation["starting_equipment"] = starting_grants.duplicate(true)
+	var invalid_editor := editor_script.new() as VBoxContainer
+	root.add_child(invalid_editor)
+	invalid_editor.call("configure", invalid_state, invalid_calculation, repository, &"creation")
+	await process_frame
+	var invalid_finalize := _find_named(invalid_editor, "FinalizeAndContinueButton") as Button
+	_assert_true(_find_text_contains(invalid_editor, "Resolve the remaining character choices before finalizing this loadout.") != null, "invalid calculations show the remaining-choices blocker")
+	_assert_true(invalid_finalize != null and invalid_finalize.disabled, "invalid calculations disable creation finalization")
+	invalid_editor.queue_free()
 	await process_frame
 
 	var creation_editor := editor_script.new() as VBoxContainer
@@ -156,6 +256,10 @@ func _run() -> void:
 	_assert_true(_find_text(creation_editor, "RECENT INVENTORY HISTORY") == null, "creation mode hides audit history")
 	var creation_catalogue_search := creation_editor.get("catalogue_search") as LineEdit
 	var creation_catalogue_details := creation_editor.get("catalogue_details") as RichTextLabel
+	var creation_inventory_messages: Array[String] = []
+	var creation_completion_messages: Array[String] = []
+	creation_editor.connect("inventory_changed", func(message: String) -> void: creation_inventory_messages.append(message))
+	creation_editor.connect("creation_finished", func(message: String) -> void: creation_completion_messages.append(message))
 	_assert_true(creation_catalogue_search != null and creation_catalogue_details != null, "creation mode exposes searchable optional equipment")
 	if creation_catalogue_search != null and creation_catalogue_details != null:
 		creation_catalogue_search.text = "m36 lasgun"
@@ -166,6 +270,8 @@ func _run() -> void:
 	var owned_item_count := prepared_state.owned_items.size()
 	creation_editor.call("_add_selected_item")
 	_assert_equal(prepared_state.owned_items.size(), owned_item_count + 1, "creation adds one selected optional item")
+	_assert_true(not creation_inventory_messages.is_empty(), "ordinary creation inventory changes emit an inventory refresh")
+	_assert_true(creation_completion_messages.is_empty(), "ordinary creation inventory changes do not emit finalization completion")
 	if prepared_state.owned_items.size() == owned_item_count + 1:
 		var optional_item := prepared_state.owned_items[prepared_state.owned_items.size() - 1] as Dictionary
 		_assert_equal((optional_item.get("custodian", {}) as Dictionary).get("type", ""), "character", "creation optional item defaults to character custody")
