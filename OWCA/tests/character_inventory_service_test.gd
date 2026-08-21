@@ -16,6 +16,8 @@ func _init() -> void:
 	_test_mixed_issue_origins_materialize_separately()
 	_test_stackable_quantity_splits_safely()
 	_test_identical_weapons_remain_separate()
+	_test_craftsmanship_aware_starting_grants()
+	_test_individual_weapon_craftsmanship()
 	_test_comrade_transfer_preserves_history()
 	_test_duplicate_regenerates_comrade_links()
 	_test_finalization_requires_materialized_grants()
@@ -99,6 +101,46 @@ func _test_identical_weapons_remain_separate() -> void:
 	_assert_equal(state.owned_items.size(), 2, "two weapons become two instances")
 	_assert_true(str(state.owned_items[0].get("instance_id")) != str(state.owned_items[1].get("instance_id")), "identical weapons have independent durable IDs")
 	_assert_equal(int(state.owned_items[0].get("quantity")), 1, "weapon instance quantity is one")
+
+
+func _test_craftsmanship_aware_starting_grants() -> void:
+	var repository := EquipmentDataRepository.new()
+	_assert_equal(repository.load_data(), OK, "equipment catalogue loads for craftsmanship grants")
+	var service: RefCounted = InventoryService.new()
+	var state := CharacterState.new()
+	var good_grants := [{"id": "m36_lasgun", "quantity": 1, "scope": "per_character", "craftsmanship": "Good"}]
+	_assert_equal((service.call("materialize_starting_loadout", state, good_grants, repository, "2026-08-09T12:00:00Z") as Dictionary).get("error"), OK, "Good base lasgun grant materializes")
+	_assert_equal(state.owned_items[0].get("definition_id"), "m36_lasgun", "Good grant keeps the base weapon definition")
+	_assert_equal(state.owned_items[0].get("craftsmanship"), "Good", "Good grant becomes owned-instance craftsmanship")
+	_assert_equal(state.owned_items[0].get("modification_ids"), [], "Good grant starts without upgrades")
+	_assert_equal(state.starting_loadout[0].get("craftsmanship"), "Good", "materialized grant records craftsmanship")
+	_assert_true(not bool(service.call("starting_loadout_matches", state, [{"id": "m36_lasgun", "quantity": 1, "scope": "per_character", "craftsmanship": "Common"}])), "changing expected craftsmanship invalidates materialized grants")
+
+	var legacy_state := CharacterState.new()
+	_assert_equal((service.call("materialize_starting_loadout", legacy_state, [{"id": "lasgun_good", "quantity": 1, "scope": "per_character"}], repository, "2026-08-09T12:05:00Z") as Dictionary).get("error"), OK, "legacy Good-lasgun grant remains loadable")
+	_assert_equal(legacy_state.owned_items[0].get("definition_id"), "lasgun_good", "legacy grant retains its stable alias ID")
+	_assert_equal(legacy_state.owned_items[0].get("craftsmanship"), "Good", "legacy alias supplies Good default craftsmanship")
+
+
+func _test_individual_weapon_craftsmanship() -> void:
+	var repository := EquipmentDataRepository.new()
+	_assert_equal(repository.load_data(), OK, "equipment catalogue loads for individual craftsmanship")
+	var service: RefCounted = InventoryService.new()
+	var state := CharacterState.new()
+	var lasgun_add: Dictionary = service.call("add_item", state, repository, "m36_lasgun", 1, "Common", "acquisition", "carried", "character", "", "Issued lasgun", "2026-08-09T12:00:00Z")
+	var carbine_add: Dictionary = service.call("add_item", state, repository, "lascarbine", 1, "Common", "acquisition", "carried", "character", "", "Issued carbine", "2026-08-09T12:01:00Z")
+	_assert_equal(lasgun_add.get("error"), OK, "M36 lasgun is added")
+	_assert_equal(carbine_add.get("error"), OK, "las carbine is added")
+	var lasgun_id := str((lasgun_add.get("instance_ids", []) as Array)[0])
+	var carbine_id := str((carbine_add.get("instance_ids", []) as Array)[0])
+	_assert_equal((service.call("update_item", state, repository, lasgun_id, 1, "Good", "carried", "", "Good craftsmanship", "2026-08-09T12:02:00Z") as Dictionary).get("error"), OK, "M36 lasgun becomes Good")
+	_assert_equal((service.call("update_item", state, repository, carbine_id, 1, "Good", "carried", "", "Good craftsmanship", "2026-08-09T12:03:00Z") as Dictionary).get("error"), OK, "las carbine becomes Good")
+	_assert_equal(_item_field(state.owned_items, "m36_lasgun", "craftsmanship"), "Good", "M36 lasgun stores Good craftsmanship")
+	_assert_equal(_item_field(state.owned_items, "lascarbine", "craftsmanship"), "Good", "las carbine stores Good craftsmanship")
+	_assert_equal(_item_field(state.owned_items, "m36_lasgun", "definition_id"), "m36_lasgun", "M36 definition remains unchanged")
+	_assert_equal(_item_field(state.owned_items, "lascarbine", "definition_id"), "lascarbine", "carbine definition remains unchanged")
+	var grenade_add: Dictionary = service.call("add_item", state, repository, "frag_grenade", 1, "Good", "acquisition", "carried", "character", "", "Invalid quality", "2026-08-09T12:04:00Z")
+	_assert_equal(grenade_add.get("error"), ERR_INVALID_PARAMETER, "grenades cannot receive non-Common craftsmanship")
 
 
 func _test_mixed_issue_origins_materialize_separately() -> void:

@@ -91,6 +91,10 @@ func _init() -> void:
 	_assert_equal(_equipment_quantity(weapon_result["equipment"], "frag_grenade"), 6, "Speciality grenades merge with regiment kit")
 	_assert_equal((_entry(weapon_result["equipment"], "frag_grenade").get("origin_quantities", {}) as Dictionary).get("standard_issue"), 2, "merged grenades retain their standard-issue quantity")
 	_assert_equal((_entry(weapon_result["equipment"], "frag_grenade").get("origin_quantities", {}) as Dictionary).get("speciality_issue"), 4, "merged grenades retain their Speciality-issue quantity")
+	var good_lasgun := _entry(weapon_result["equipment"], "m36_lasgun")
+	_assert_true(not good_lasgun.is_empty(), "Weapon Specialist Good lasgun uses the base definition")
+	_assert_equal(good_lasgun.get("craftsmanship"), "Good", "Weapon Specialist Good lasgun carries individual craftsmanship")
+	_assert_true(not _entry_exists(weapon_result["equipment"], "lasgun_good"), "new calculation does not emit the legacy Good-lasgun alias")
 
 	# A duplicate Aptitude generates a required replacement choice.
 	var aptitude_regiment := RegimentState.new()

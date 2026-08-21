@@ -389,6 +389,8 @@ func _load_inventory_data(value: Dictionary, version: int) -> bool:
 			return false
 		if str(entry.get("scope", "")) not in ["per_character", "per_squad"] or str(entry.get("origin", "")) not in ["standard_issue", "speciality_issue"] or str(entry.get("reconciliation", "")) not in STARTING_GRANT_RECONCILIATIONS:
 			return false
+		if version >= SAVE_VERSION and (not entry.get("craftsmanship", null) is String or str(entry.get("craftsmanship", "")) not in CRAFTSMANSHIP_VALUES):
+			return false
 		if not entry.get("issued_instance_ids", []) is Array or not entry.get("note", "") is String:
 			return false
 		var issued_ids: Dictionary = {}
@@ -429,6 +431,14 @@ func _load_inventory_data(value: Dictionary, version: int) -> bool:
 			return false
 		instance_ids[instance_id] = true
 		loaded_items.append(item)
+	if version < SAVE_VERSION:
+		for grant: Dictionary in loaded_starting:
+			var migrated_craftsmanship := ""
+			for item: Dictionary in loaded_items:
+				if str(item.get("instance_id", "")) in (grant.get("issued_instance_ids", []) as Array):
+					migrated_craftsmanship = str(item.get("craftsmanship", ""))
+					break
+			grant["craftsmanship"] = migrated_craftsmanship if migrated_craftsmanship in CRAFTSMANSHIP_VALUES else "Common"
 	var event_ids: Dictionary = {}
 	var loaded_events: Array[Dictionary] = []
 	for event_value: Variant in value.get("inventory_events", []):
@@ -488,8 +498,8 @@ func get_starting_grant_consistency_error() -> String:
 		for item: Dictionary in owned_items:
 			if str(item.get("instance_id", "")) not in issued_ids:
 				continue
-			if str(item.get("definition_id", "")) != str(grant.get("definition_id", "")) or str(item.get("origin", "")) != str(grant.get("origin", "")):
-				return "A present starting grant has inconsistent item identity or provenance."
+			if str(item.get("definition_id", "")) != str(grant.get("definition_id", "")) or str(item.get("origin", "")) != str(grant.get("origin", "")) or str(item.get("craftsmanship", "")) != str(grant.get("craftsmanship", "")):
+				return "A present starting grant has inconsistent item identity, craftsmanship, or provenance."
 			present_quantity += int(item.get("quantity", 0))
 		if present_quantity != int(grant.get("quantity", 0)):
 			return "A starting grant marked present no longer has its exact issued quantity."

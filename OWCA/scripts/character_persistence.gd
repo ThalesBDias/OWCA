@@ -54,6 +54,8 @@ func load_character(path: String, state: CharacterState) -> Dictionary:
 		return { "error": state_error, "message": "Character state is invalid or from an unsupported version." }
 	var equipment_repository := EquipmentDataRepository.new()
 	if equipment_repository.load_data() == OK:
+		if int((envelope.get("character", {}) as Dictionary).get("version", 0)) == 4:
+			_migrate_v4_grant_craftsmanship(state, envelope.get("character", {}) as Dictionary, equipment_repository)
 		var missing_definitions := _missing_inventory_definition_ids(state, equipment_repository)
 		if not missing_definitions.is_empty() and state.loadout_state == CharacterState.LOADOUT_FINALIZED:
 			state.loadout_state = CharacterState.LOADOUT_DRAFT
@@ -226,6 +228,27 @@ func _validate_unresolved_modification_ids(item: Dictionary, repository: Equipme
 		if modification.is_empty() or str(modification.get("category", "")) != "weapon_upgrade":
 			return {"error": ERR_INVALID_DATA, "message": "The %s references missing weapon modification '%s'." % [context, modification_id]}
 	return {"error": OK}
+
+
+func _migrate_v4_grant_craftsmanship(state: CharacterState, original_state: Dictionary, repository: EquipmentDataRepository) -> void:
+	var original_grants := original_state.get("starting_loadout", []) as Array
+	for index in mini(state.starting_loadout.size(), original_grants.size()):
+		var original := original_grants[index] as Dictionary
+		if original.has("craftsmanship"):
+			continue
+		var grant := state.starting_loadout[index]
+		var issued_ids := grant.get("issued_instance_ids", []) as Array
+		var issued_craftsmanship := ""
+		for item: Dictionary in state.owned_items:
+			if str(item.get("instance_id", "")) in issued_ids:
+				issued_craftsmanship = str(item.get("craftsmanship", ""))
+				break
+		if issued_craftsmanship in CharacterState.CRAFTSMANSHIP_VALUES:
+			grant["craftsmanship"] = issued_craftsmanship
+			continue
+		var definition := repository.get_item(str(grant.get("definition_id", "")))
+		var default_craftsmanship := str(definition.get("craftsmanship", "Common"))
+		grant["craftsmanship"] = default_craftsmanship if default_craftsmanship in CharacterState.CRAFTSMANSHIP_VALUES else "Common"
 
 
 func _missing_inventory_definition_ids(state: CharacterState, repository: EquipmentDataRepository) -> Array[String]:

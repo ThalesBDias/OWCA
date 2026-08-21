@@ -229,6 +229,8 @@ func _test_character_contract(regiment_repository: RegimentDataRepository, chara
 	version_four_state_data["version"] = 4
 	for owned_value: Variant in version_four_state_data.get("owned_items", []):
 		(owned_value as Dictionary).erase("modification_ids")
+	for grant_value: Variant in version_four_state_data.get("starting_loadout", []):
+		(grant_value as Dictionary).erase("craftsmanship")
 	for event_value: Variant in version_four_state_data.get("inventory_events", []):
 		((event_value as Dictionary).get("item_snapshot", {}) as Dictionary).erase("modification_ids")
 	_write_json(MUTATED_PATH, version_four)
@@ -243,6 +245,22 @@ func _test_character_contract(regiment_repository: RegimentDataRepository, chara
 		_assert_equal((event.get("item_snapshot", {}) as Dictionary).get("modification_ids"), [], "version 4 snapshots gain empty modification arrays")
 	_assert_true(_array_contains_fragment(version_four_result.get("migration_report", []) as Array, "Initialized empty weapon modification state"), "version 4 migration reports modification initialization")
 	_assert_true(not _array_contains_fragment(version_four_result.get("migration_report", []) as Array, "unprepared loadout"), "version 4 migration does not claim loadout reset")
+
+	var lost_legacy_alias := version_four.duplicate(true)
+	var lost_state_data := lost_legacy_alias["character"] as Dictionary
+	var lost_grant := (lost_state_data.get("starting_loadout", []) as Array)[0] as Dictionary
+	var lost_ids := lost_grant.get("issued_instance_ids", []) as Array
+	lost_grant["definition_id"] = "lasgun_good"
+	lost_grant["reconciliation"] = "loss"
+	lost_grant["note"] = "Lost before v5 migration"
+	var legacy_owned := lost_state_data.get("owned_items", []) as Array
+	for index in range(legacy_owned.size() - 1, -1, -1):
+		if str((legacy_owned[index] as Dictionary).get("instance_id", "")) in lost_ids:
+			legacy_owned.remove_at(index)
+	_write_json(MUTATED_PATH, lost_legacy_alias)
+	var lost_legacy_state := CharacterState.new()
+	_assert_equal(persistence.load_character(MUTATED_PATH, lost_legacy_state).get("error"), OK, "lost v4 legacy-alias grant loads")
+	_assert_equal(lost_legacy_state.starting_loadout[0].get("craftsmanship"), "Good", "lost v4 legacy alias migrates from its definition default")
 
 	var legacy := envelope.duplicate(true)
 	legacy["version"] = 2
@@ -477,7 +495,7 @@ func _test_schema_documents() -> void:
 	for field_name in ["comrade", "loadout_state", "starting_loadout", "owned_items", "inventory_events"]:
 		_assert_true(field_name in character_required, "character schema requires %s" % field_name)
 	var starting_required := (((character_schema.get("$defs", {}) as Dictionary).get("starting_grant", {}) as Dictionary).get("required", []) as Array)
-	_assert_true("origin" in starting_required, "character schema requires starting-grant provenance")
+	_assert_true("origin" in starting_required and "craftsmanship" in starting_required, "character schema requires starting-grant provenance and craftsmanship")
 	var owned_required := (((character_schema.get("$defs", {}) as Dictionary).get("owned_item", {}) as Dictionary).get("required", []) as Array)
 	_assert_true("modification_ids" in owned_required, "character schema requires owned-item modifications")
 	var snapshot_required := (((((character_schema.get("$defs", {}) as Dictionary).get("inventory_event", {}) as Dictionary).get("properties", {}) as Dictionary).get("item_snapshot", {}) as Dictionary).get("required", []) as Array)

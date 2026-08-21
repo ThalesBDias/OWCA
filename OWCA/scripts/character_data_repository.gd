@@ -265,7 +265,14 @@ func _validate_effects(effects: Dictionary, context: String) -> String:
 	for equipment_value: Variant in effects.get("equipment", []):
 		if not equipment_value is Dictionary:
 			return "%s contains a non-object equipment grant." % context
-		var equipment_id := str((equipment_value as Dictionary).get("id", ""))
+		var grant := equipment_value as Dictionary
+		var equipment_id := str(grant.get("id", ""))
 		if not equipment_repository.has_item(equipment_id):
 			return "%s references unknown equipment id '%s'." % [context, equipment_id]
+		var definition := equipment_repository.get_item(equipment_id)
+		var craftsmanship := str(grant.get("craftsmanship", definition.get("craftsmanship", "Common")))
+		if craftsmanship not in CharacterState.CRAFTSMANSHIP_VALUES:
+			return "%s uses invalid craftsmanship '%s' for '%s'." % [context, craftsmanship, equipment_id]
+		if str(definition.get("category", "")) == "grenade_missile" and craftsmanship != "Common":
+			return "%s cannot apply craftsmanship modifiers to grenade or missile '%s'." % [context, equipment_id]
 	return ""

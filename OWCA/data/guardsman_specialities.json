@@ -110,8 +110,8 @@
           "minimum": 1,
           "maximum": 1,
           "options": [
-            { "id": "missile_launcher", "label": "Missile launcher with 5 frag missiles", "effects": { "equipment": [{ "id": "missile_launcher_common", "quantity": 1, "scope": "per_character" }, { "id": "frag_missile", "quantity": 5, "scope": "per_character" }] } },
-            { "id": "heavy_stubber", "label": "Heavy stubber", "effects": { "equipment": [{ "id": "heavy_stubber_common", "quantity": 1, "scope": "per_character" }] } },
+            { "id": "missile_launcher", "label": "Missile launcher with 5 frag missiles", "effects": { "equipment": [{ "id": "missile_launcher", "quantity": 1, "scope": "per_character", "craftsmanship": "Common" }, { "id": "frag_missile", "quantity": 5, "scope": "per_character" }] } },
+            { "id": "heavy_stubber", "label": "Heavy stubber", "effects": { "equipment": [{ "id": "heavy_stubber", "quantity": 1, "scope": "per_character", "craftsmanship": "Common" }] } },
             { "id": "favoured_heavy", "label": "Regimental Favoured Heavy Weapon", "effects": { "equipment": [{ "id": "regimental_favoured_heavy_weapon", "quantity": 1, "scope": "per_character" }] } }
           ]
         }
@@ -219,7 +219,7 @@
         "skills": ["command"],
         "talents": ["weapon_training_chain", "weapon_training_low_tech"],
         "aptitudes": ["Defence", "Fellowship", "Leadership", "Perception", "Strength", "Toughness", "Weapon Skill"],
-        "equipment": [{ "id": "laspistol_common", "quantity": 1, "scope": "per_character" }, { "id": "chainsword_common", "quantity": 1, "scope": "per_character" }]
+        "equipment": [{ "id": "laspistol", "quantity": 1, "scope": "per_character", "craftsmanship": "Common" }, { "id": "chainsword", "quantity": 1, "scope": "per_character", "craftsmanship": "Common" }]
       },
       "choices": [
         {
@@ -333,9 +333,9 @@
           "minimum": 1,
           "maximum": 1,
           "options": [
-            { "id": "lasgun", "label": "Good Craftsmanship lasgun", "effects": { "equipment": [{ "id": "lasgun_good", "quantity": 1, "scope": "per_character" }] } },
-            { "id": "flamer", "label": "Common Craftsmanship flamer", "effects": { "equipment": [{ "id": "flamer_common", "quantity": 1, "scope": "per_character" }] } },
-            { "id": "shotgun", "label": "Common Craftsmanship shotgun", "effects": { "equipment": [{ "id": "shotgun_common", "quantity": 1, "scope": "per_character" }] } },
+            { "id": "lasgun", "label": "Good Craftsmanship lasgun", "effects": { "equipment": [{ "id": "m36_lasgun", "quantity": 1, "scope": "per_character", "craftsmanship": "Good" }] } },
+            { "id": "flamer", "label": "Common Craftsmanship flamer", "effects": { "equipment": [{ "id": "flamer", "quantity": 1, "scope": "per_character", "craftsmanship": "Common" }] } },
+            { "id": "shotgun", "label": "Common Craftsmanship shotgun", "effects": { "equipment": [{ "id": "shotgun", "quantity": 1, "scope": "per_character", "craftsmanship": "Common" }] } },
             { "id": "favoured_basic", "label": "Regimental Favoured Basic Weapon", "effects": { "equipment": [{ "id": "regimental_favoured_basic_weapon", "quantity": 1, "scope": "per_character" }] } }
           ]
         }

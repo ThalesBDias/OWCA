@@ -27,6 +27,9 @@ func materialize_starting_loadout(state: CharacterState, grants: Array, reposito
 		if not repository.has_item(definition_id) or quantity <= 0 or scope not in ["per_character", "per_squad"]:
 			return { "error": ERR_INVALID_DATA, "message": "Starting equipment grant '%s' is invalid." % definition_id }
 		var definition := repository.get_item(definition_id)
+		var craftsmanship := str(grant.get("craftsmanship", definition.get("craftsmanship", "Common")))
+		if craftsmanship not in CharacterState.CRAFTSMANSHIP_VALUES or (str(definition.get("category", "")) == "grenade_missile" and craftsmanship != "Common"):
+			return { "error": ERR_INVALID_DATA, "message": "Starting equipment grant '%s' has invalid craftsmanship." % definition_id }
 		var origin_splits := _starting_origin_splits(grant, quantity)
 		if origin_splits.is_empty():
 			return { "error": ERR_INVALID_DATA, "message": "Starting equipment grant '%s' has inconsistent issue origins." % definition_id }
@@ -43,7 +46,7 @@ func materialize_starting_loadout(state: CharacterState, grants: Array, reposito
 				var item := _build_item(
 					definition_id,
 					item_quantity,
-					str(definition.get("craftsmanship", "Common")),
+					craftsmanship,
 					grant_origin,
 					starting_location,
 					{ "type": "squad" if scope == "per_squad" else "character", "id": "" },
@@ -57,6 +60,7 @@ func materialize_starting_loadout(state: CharacterState, grants: Array, reposito
 				"definition_id": definition_id,
 				"quantity": split_quantity,
 				"scope": scope,
+				"craftsmanship": craftsmanship,
 				"origin": grant_origin,
 				"issued_instance_ids": issued_instance_ids,
 				"reconciliation": "present",
@@ -105,6 +109,8 @@ func add_item(state: CharacterState, repository: EquipmentDataRepository, defini
 		return { "error": ERR_INVALID_DATA, "message": "Select a supported non-upgrade equipment definition." }
 	if quantity <= 0 or craftsmanship not in CharacterState.CRAFTSMANSHIP_VALUES or origin not in CharacterState.ITEM_ORIGINS or location not in CharacterState.ITEM_LOCATIONS:
 		return { "error": ERR_INVALID_PARAMETER, "message": "Equipment quantity, craftsmanship, origin, or location is invalid." }
+	if str(definition.get("category", "")) == "grenade_missile" and craftsmanship != "Common":
+		return { "error": ERR_INVALID_PARAMETER, "message": "Grenades and missiles use Common craftsmanship only." }
 	if not _custodian_is_available(state, custodian_type, custodian_id) or timestamp_utc.strip_edges().is_empty():
 		return { "error": ERR_INVALID_PARAMETER, "message": "Equipment custodian or timestamp is invalid." }
 	var custodian := { "type": custodian_type, "id": custodian_id if custodian_type == "comrade" else "" }
@@ -145,6 +151,8 @@ func update_item(state: CharacterState, repository: EquipmentDataRepository, ins
 	var definition := repository.get_item(str(item.get("definition_id", "")))
 	if quantity <= 0 or clean_craftsmanship not in CharacterState.CRAFTSMANSHIP_VALUES or location not in CharacterState.ITEM_LOCATIONS or timestamp_utc.strip_edges().is_empty() or (not origin_override.is_empty() and origin_override not in CharacterState.ITEM_ORIGINS):
 		return { "error": ERR_INVALID_PARAMETER, "message": "Equipment update is invalid." }
+	if not definition.is_empty() and str(definition.get("category", "")) == "grenade_missile" and clean_craftsmanship != "Common":
+		return { "error": ERR_INVALID_PARAMETER, "message": "Grenades and missiles use Common craftsmanship only." }
 	if not definition.is_empty() and str(definition.get("category", "")) in ["ranged_weapon", "melee_weapon", "armour"] and quantity != 1:
 		return { "error": ERR_INVALID_PARAMETER, "message": "Weapons and armour must remain separate quantity-one instances." }
 	var is_starting_instance := instance_id in _issued_instance_ids(state)
@@ -231,14 +239,14 @@ func finalize_loadout(state: CharacterState, repository: EquipmentDataRepository
 ## Compares the materialized grant totals with the character calculator's
 ## current package. Owned acquisitions are intentionally outside this check.
 func starting_loadout_matches(state: CharacterState, expected_grants: Array) -> bool:
-	return _materialized_grant_signature(state.starting_loadout) == _expected_grant_signature(expected_grants)
+	return _materialized_grant_signature(state.starting_loadout) == _expected_grant_signature(expected_grants, state.starting_loadout)
 
 
 ## Replaces only prior starting-issue records after creation inputs change.
 ## Later acquisitions survive, and removed issued records remain in history as
 ## explicit corrections before the newly calculated issue events are appended.
 func rebuild_starting_loadout(state: CharacterState, expected_grants: Array, repository: EquipmentDataRepository, timestamp_utc: String) -> Dictionary:
-	if timestamp_utc.strip_edges().is_empty() or _expected_grant_signature(expected_grants).is_empty():
+	if timestamp_utc.strip_edges().is_empty() or _expected_grant_signature(expected_grants, state.starting_loadout).is_empty():
 		return { "error": ERR_INVALID_PARAMETER, "message": "Current calculated starting grants are not ready to rebuild." }
 	for grant_value: Variant in expected_grants:
 		if not grant_value is Dictionary or not repository.has_item(str((grant_value as Dictionary).get("id", ""))):
@@ -394,7 +402,7 @@ func _starting_origin_splits(grant: Dictionary, total_quantity: int) -> Array[Di
 	return output if split_total == total_quantity else []
 
 
-func _expected_grant_signature(grants: Array) -> Dictionary:
+func _expected_grant_signature(grants: Array, materialized_fallback: Array[Dictionary] = []) -> Dictionary:
 	var signature: Dictionary = {}
 	for grant_value: Variant in grants:
 		if not grant_value is Dictionary:
@@ -403,13 +411,16 @@ func _expected_grant_signature(grants: Array) -> Dictionary:
 		var definition_id := str(grant.get("id", ""))
 		var scope := str(grant.get("scope", "per_character"))
 		var quantity := int(grant.get("quantity", 0))
-		if definition_id.is_empty() or scope not in ["per_character", "per_squad"] or quantity <= 0:
+		var craftsmanship := str(grant.get("craftsmanship", _fallback_grant_craftsmanship(materialized_fallback, definition_id, scope)))
+		if craftsmanship.is_empty():
+			craftsmanship = "Common"
+		if definition_id.is_empty() or scope not in ["per_character", "per_squad"] or quantity <= 0 or craftsmanship not in CharacterState.CRAFTSMANSHIP_VALUES:
 			return {}
 		var origin_splits := _starting_origin_splits(grant, quantity)
 		if origin_splits.is_empty():
 			return {}
 		for split: Dictionary in origin_splits:
-			var key := "%s|%s|%s" % [definition_id, scope, split.get("origin", "")]
+			var key := "%s|%s|%s|%s" % [definition_id, scope, craftsmanship, split.get("origin", "")]
 			signature[key] = int(signature.get(key, 0)) + int(split.get("quantity", 0))
 	return signature
 
@@ -417,6 +428,13 @@ func _expected_grant_signature(grants: Array) -> Dictionary:
 func _materialized_grant_signature(grants: Array[Dictionary]) -> Dictionary:
 	var signature: Dictionary = {}
 	for grant: Dictionary in grants:
-		var key := "%s|%s|%s" % [grant.get("definition_id", ""), grant.get("scope", "per_character"), grant.get("origin", "")]
+		var key := "%s|%s|%s|%s" % [grant.get("definition_id", ""), grant.get("scope", "per_character"), grant.get("craftsmanship", "Common"), grant.get("origin", "")]
 		signature[key] = int(signature.get(key, 0)) + int(grant.get("quantity", 0))
 	return signature
+
+
+func _fallback_grant_craftsmanship(grants: Array[Dictionary], definition_id: String, scope: String) -> String:
+	for grant: Dictionary in grants:
+		if str(grant.get("definition_id", "")) == definition_id and str(grant.get("scope", "per_character")) == scope:
+			return str(grant.get("craftsmanship", "Common"))
+	return ""

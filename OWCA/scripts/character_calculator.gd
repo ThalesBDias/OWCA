@@ -352,13 +352,16 @@ func _add_equipment(target: Dictionary, entry: Dictionary, regiment_repository: 
 	if item_id.is_empty():
 		return
 	var scope := str(entry.get("scope", "per_character"))
-	var key := "%s|%s" % [item_id, scope]
+	var definition := character_repository.equipment_repository.get_item(item_id)
+	var craftsmanship := str(entry.get("craftsmanship", definition.get("craftsmanship", "Common")))
+	var key := "%s|%s|%s" % [item_id, scope, craftsmanship]
 	if not target.has(key):
 		target[key] = {
 			"id": item_id,
 			"name": _catalog_name("equipment", item_id, regiment_repository, character_repository),
 			"quantity": 0,
 			"scope": scope,
+			"craftsmanship": craftsmanship,
 			"origins": [],
 			"origin_quantities": {}
 		}

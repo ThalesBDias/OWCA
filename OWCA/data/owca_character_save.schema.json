@@ -220,12 +220,13 @@
     },
     "starting_grant": {
       "type": "object",
-      "required": ["grant_id", "definition_id", "quantity", "scope", "origin", "issued_instance_ids", "reconciliation", "note"],
+      "required": ["grant_id", "definition_id", "quantity", "scope", "craftsmanship", "origin", "issued_instance_ids", "reconciliation", "note"],
       "properties": {
         "grant_id": { "type": "string", "minLength": 1 },
         "definition_id": { "$ref": "#/$defs/stable_id" },
         "quantity": { "type": "integer", "minimum": 1 },
         "scope": { "enum": ["per_character", "per_squad"] },
+        "craftsmanship": { "enum": ["Poor", "Common", "Good", "Best"] },
         "origin": { "enum": ["standard_issue", "speciality_issue"] },
         "issued_instance_ids": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/document_id" } },
         "reconciliation": { "enum": ["unresolved", "present", "exchange", "loss", "transfer", "correction"] },
