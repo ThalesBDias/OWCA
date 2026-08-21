@@ -4,12 +4,13 @@
   "title": "OWCA Equipment Catalogue",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema_version", "content_version", "sources", "items"],
+  "required": ["schema_version", "content_version", "sources", "craftsmanship_rules", "items"],
   "properties": {
     "schema_version": { "const": 1 },
     "content_version": { "type": "string", "minLength": 1 },
     "scope_note": { "type": "string" },
     "sources": { "type": "object", "minProperties": 1, "additionalProperties": { "$ref": "#/$defs/source_definition" } },
+    "craftsmanship_rules": { "$ref": "#/$defs/craftsmanship_rules" },
     "items": { "type": "array", "items": { "$ref": "#/$defs/item" } }
   },
   "$defs": {
@@ -25,6 +26,110 @@
         "book": { "type": "string", "minLength": 1 },
         "page": { "type": "integer", "minimum": 1 },
         "page_end": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "condition": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": false,
+      "properties": {
+        "base_quality_absent": { "type": "string", "minLength": 1 },
+        "base_quality_present": { "type": "string", "minLength": 1 },
+        "quality_absent": { "type": "string", "minLength": 1 },
+        "quality_present": { "type": "string", "minLength": 1 }
+      }
+    },
+    "effect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["operation"],
+      "properties": {
+        "operation": { "enum": ["quality_add", "quality_remove_prefix", "numeric_add", "numeric_multiply", "situational"] },
+        "target": { "enum": ["weight_kg", "profile.range_m", "profile.magazine", "profile.penetration", "profile.damage_bonus"] },
+        "value": { "type": ["number", "string"] },
+        "condition": { "$ref": "#/$defs/condition" },
+        "rounding": { "enum": ["ceil", "floor", "round"] },
+        "code": { "type": "string", "minLength": 1 },
+        "summary": { "type": "string", "minLength": 1 }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "operation": { "enum": ["numeric_add", "numeric_multiply"] } } },
+          "then": { "required": ["target", "value"], "properties": { "value": { "type": "number" } } }
+        },
+        {
+          "if": { "properties": { "operation": { "enum": ["quality_add", "quality_remove_prefix"] } } },
+          "then": { "required": ["value"], "properties": { "value": { "type": "string", "minLength": 1 } } }
+        },
+        {
+          "if": { "properties": { "operation": { "const": "situational" } } },
+          "then": { "required": ["code", "summary"] }
+        },
+        {
+          "if": {
+            "required": ["operation", "target"],
+            "properties": {
+              "operation": { "const": "numeric_multiply" },
+              "target": { "enum": ["profile.range_m", "profile.magazine"] }
+            }
+          },
+          "then": { "required": ["rounding"] }
+        }
+      ]
+    },
+    "craftsmanship_tier": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ranged_weapon", "melee_weapon"],
+      "properties": {
+        "ranged_weapon": { "type": "array", "items": { "$ref": "#/$defs/effect" } },
+        "melee_weapon": { "type": "array", "items": { "$ref": "#/$defs/effect" } }
+      }
+    },
+    "craftsmanship_rules": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "tiers"],
+      "properties": {
+        "source": { "$ref": "#/$defs/source_reference" },
+        "tiers": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["Poor", "Common", "Good", "Best"],
+          "properties": {
+            "Poor": { "$ref": "#/$defs/craftsmanship_tier" },
+            "Common": { "$ref": "#/$defs/craftsmanship_tier" },
+            "Good": { "$ref": "#/$defs/craftsmanship_tier" },
+            "Best": { "$ref": "#/$defs/craftsmanship_tier" }
+          }
+        }
+      }
+    },
+    "compatibility_selector": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "categories": { "type": "array", "items": { "enum": ["ranged_weapon", "melee_weapon"] }, "minItems": 1, "uniqueItems": true },
+        "classes": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true },
+        "families": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true }
+      }
+    },
+    "modification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["order", "compatibility", "effects"],
+      "properties": {
+        "order": { "type": "integer", "minimum": 0 },
+        "exclusive_group": { "type": "string", "minLength": 1 },
+        "conflicts": { "type": "array", "items": { "type": "string", "pattern": "^[a-z0-9][a-z0-9_]*$" }, "uniqueItems": true },
+        "compatibility": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["any_of"],
+          "properties": { "any_of": { "type": "array", "items": { "$ref": "#/$defs/compatibility_selector" }, "minItems": 1 } }
+        },
+        "effects": { "type": "array", "items": { "$ref": "#/$defs/effect" }, "minItems": 1 }
       }
     },
     "weapon_profile": {
@@ -55,6 +160,7 @@
         "weight_multiplier": { "type": "number", "exclusiveMinimum": 0 },
         "ammunition_id": { "type": "string" },
         "carried_unit": { "type": "string" },
+        "legacy_alias": { "type": "boolean" },
         "base_definition_id": { "type": "string" },
         "craftsmanship": { "type": "string" },
         "summary": { "type": "string" },
@@ -67,13 +173,17 @@
             "ap": { "type": "integer", "minimum": 0 }
           }
         },
-        "compatibility": { "type": "object" },
+        "modification": { "$ref": "#/$defs/modification" },
         "source": { "$ref": "#/$defs/source_reference" }
       },
       "allOf": [
         {
           "if": { "properties": { "category": { "enum": ["ranged_weapon", "melee_weapon", "grenade_missile"] } } },
           "then": { "required": ["profile"] }
+        },
+        {
+          "if": { "properties": { "category": { "const": "weapon_upgrade" } } },
+          "then": { "required": ["modification"] }
         }
       ]
     }

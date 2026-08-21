@@ -8,7 +8,7 @@ var _failures := 0
 func _init() -> void:
 	var repository := EquipmentDataRepository.new()
 	_assert_equal(repository.load_data(), OK, "equipment catalogue loads")
-	_assert_equal(repository.get_content_version(), "0.6.0-core-equipment", "content version")
+	_assert_equal(repository.get_content_version(), "0.8.0-core-weapon-modifications", "content version")
 	_assert_equal(repository.get_items().size(), 115, "supported definition count")
 	_assert_equal(_count_category(repository, "ranged_weapon"), 37, "ranged definition count")
 	_assert_equal(_count_category(repository, "melee_weapon"), 12, "melee definition count")
@@ -26,6 +26,10 @@ func _init() -> void:
 
 	lasgun["name"] = "Mutated"
 	_assert_equal(repository.get_item_name("m36_lasgun"), "M36 lasgun", "returned definitions are immutable copies")
+	_assert_equal(repository.get_item("lasgun_good").get("name"), "Good Craftsmanship M36 lasgun", "legacy alias remains available by exact lookup")
+	_assert_equal(_count_id(repository.get_selectable_items(), "m36_lasgun"), 1, "M36 lasgun appears once in normal selection")
+	_assert_equal(_count_id(repository.get_selectable_items(), "lascarbine"), 1, "las carbine appears once in normal selection")
+	_assert_equal(_count_id(repository.get_selectable_items(), "lasgun_good"), 0, "legacy Good lasgun is hidden from normal selection")
 
 	var regiment_repository := RegimentDataRepository.new()
 	_assert_equal(regiment_repository.load_data(), OK, "regiment references resolve through shared catalogue")
@@ -45,6 +49,14 @@ func _count_category(repository: EquipmentDataRepository, category: String) -> i
 	var count := 0
 	for item: Dictionary in repository.get_items():
 		if str(item.get("category", "")) == category:
+			count += 1
+	return count
+
+
+func _count_id(items: Array[Dictionary], item_id: String) -> int:
+	var count := 0
+	for item: Dictionary in items:
+		if str(item.get("id", "")) == item_id:
 			count += 1
 	return count
 
