@@ -8,6 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+- Added per-instance Poor, Common, Good, and Best craftsmanship for every owned ranged or melee weapon; grenades and missiles remain Common and cannot receive these modifiers.
+- Added compatible installation and removal for Mono, Compact, Red-dot laser sight, Telescopic sight, and Tripod/Bipod, including one-sight exclusivity, atomic audit events, and independent same-definition weapon instances.
+- Added deterministic base/final weapon profiles, final modified weight, ordered source-labelled calculation steps, compatibility explanations, Armoury reference details, and printable dossier lines.
+- Added state/envelope v5 and schema `1.4.0` persistence, v4 lifecycle-preserving migration, legacy craftsmanship-alias compatibility, and a refreshed modified-weapon example.
+- Added catalogue, calculator, service, migration, UI, layout, Armoury, printable, and real-renderer export regression coverage for weapon modifications.
 - Added a focused Create Character loadout workflow with only Starting Equipment, Add Optional Equipment, and Review and Finalize sections.
 - Added plain-language starting-grant recovery and creation-mode defaults for optional equipment: character custody, Common craftsmanship, and carried location.
 - Added regression coverage for the simplified creation mode, retained Manage Loadout maintenance controls, creation finalization, and the 960x650 minimum window.
@@ -48,8 +53,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Create Character now shows only item names and meaningful quantities, omits the selected-item detail panel, and retains Search, filters, Add Equipment, and Remove; Manage Loadout and Armoury remain detailed.
 - Create Character now lets players prepare calculated starting grants with **Prepare Starting Equipment**, then automatically reconciles intact prepared grants; it also groups loadout items as Weapons, Armour, Ammunition, and Gear, and keeps profiles, armour, carried weight, and the Finalize Loadout and Continue to Review action visible without exposing maintenance controls.
 - Manage Loadout retains custody, provenance, reconciliation, audit-history, and other detailed maintenance controls outside the player-focused creation flow.
-- Character saves now use envelope/state version 4 and public interoperability schema `1.3.0`, with v1-v3 migration to an unprepared draft loadout.
-- The landing page now uses a responsive four-workflow layout and the application version is `0.7.1-dev`.
+- Character saves now use envelope/state version 5 and public interoperability schema `1.4.0`; v4 retains its lifecycle and inventory while initializing weapon modification state, and v1-v3 migration still returns to an unprepared draft loadout.
+- Normal Armoury and add-equipment browsing now show canonical base weapons once; the seven old craftsmanship variants remain exact-lookup aliases for compatible saves.
+- The landing page uses a responsive four-workflow layout and the application version is `0.8.0-dev`.
 - Character dossiers now print the owned loadout, custody/location context, known carried weight, and armour by location instead of only the calculated starting-equipment preview.
 
 - Regiment and character starting packages now resolve equipment through the same shared catalogue instead of maintaining duplicate local definition maps.
@@ -65,6 +71,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Known limitations
 
+- Weapon modification support is limited to the five verified Core upgrades above; requisition economics, temporary combat bonuses, firing modes, current ammunition, jams, and damage remain at the table.
 - Specialist choices such as Peer, Hatred, Resistance, Psychic Power, Mastery, and individual Exotic Weapons are visible and priced but disabled until their selected specialisation can be stored safely.
 - Implant, Psy Rating, and Squad Logistics prerequisites are displayed but remain unmet because those character-state systems are outside the current Guardsman slice.
 

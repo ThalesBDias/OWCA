@@ -25,7 +25,7 @@ OWCA records three different version concepts because they answer different comp
 | `*_content_version` | Version of the rules catalog used for calculation | Warn when reproducing results with different rules data |
 | `producer.version` | Version of the application that wrote the file | Diagnostic only; do not use it instead of `schema_version` |
 
-OWCA v0.7.0 writes interoperability schema `1.3.0`. It adds authoritative character inventory, Comrade identity, loadout reconciliation, and inventory audit records. It also records `inventory_rules_content_version` for the carrying-capacity table. OWCA continues to load compatible 1.x files and legacy saves without `schema_version`.
+OWCA v0.8.0 writes interoperability schema `1.4.0`. It adds authoritative per-instance weapon modification IDs and modification audit events to the v0.7 inventory contract. OWCA continues to load compatible 1.x files and legacy saves without `schema_version`.
 
 ## Authoritative inputs and calculated previews
 
@@ -57,7 +57,7 @@ authoritative selections + compatible rules data -> fresh calculated result
 
 Unknown top-level fields are allowed so readers can tolerate additive contract changes. OWCA does not promise to preserve arbitrary unknown fields. Use `extensions` for data that must survive an OWCA load/save cycle.
 
-Current regiment envelopes use numeric version `2`; current character envelopes use version `4`. Supported older envelope versions are migration inputs, not examples of the current write contract.
+Current regiment envelopes use numeric version `2`; current character envelopes use version `5`. Supported older envelope versions are migration inputs, not examples of the current write contract.
 
 ## Regiment authoritative state
 
@@ -88,7 +88,7 @@ The top-level `character` object contains:
 
 | Field | Required | Description |
 | --- | --- | --- |
-| `version` | Yes | Character state migration version; currently `4` |
+| `version` | Yes | Character state migration version; currently `5` |
 | `document_id` | Yes | Durable UUID identifying the character record |
 | `workflow_state` | Yes | `draft`, `creation_complete`, or the reserved `campaign_active` state |
 | `name`, `player_name` | Yes | Player-entered identity fields |
@@ -105,17 +105,19 @@ The top-level `character` object contains:
 | `loadout_state` | Yes | `unprepared`, `draft`, or `finalized` |
 | `starting_loadout` | Yes | Calculated starting grants, issue provenance, issued instance IDs, and reconciliation state |
 | `owned_items` | Yes | Authoritative durable equipment instances and stacks |
-| `inventory_events` | Yes | Append-only issue, acquisition, quantity, transfer, loss, exchange, and correction audit entries |
+| `inventory_events` | Yes | Append-only issue, acquisition, quantity, transfer, modification, loss, exchange, and correction audit entries |
 
 Purchase order is meaningful. Advancement IDs such as `skill:dodge` or `talent:rapid_reload` must be replayed in order because costs, ranks, affordability, and prerequisites can depend on earlier entries.
 
 Lifecycle state is explicit, not inferred from the current calculated preview. Editing a completed creation input reopens the record as a draft and invalidates its finalized loadout until starting grants match the newly calculated package. OWCA can rebuild obsolete starting-issue records while preserving later acquisitions and recording corrections. Ordinary inventory maintenance after creation does not reopen character creation. `campaign_active` is reserved by the schema for the v0.9 campaign-advancement workflow.
 
-Each starting grant retains its `standard_issue` or `speciality_issue` origin, the durable item IDs issued for it, and an explicit reconciliation value: `present`, `exchange`, `loss`, `transfer`, `correction`, or `unresolved`. A grant marked present must still contain its full issued quantity; any other resolution needs a short player explanation before finalization. Equal definition totals with different issue origins are not interchangeable.
+Each starting grant retains its `standard_issue` or `speciality_issue` origin, craftsmanship, the durable item IDs issued for it, and an explicit reconciliation value: `present`, `exchange`, `loss`, `transfer`, `correction`, or `unresolved`. A grant marked present must still contain its full issued quantity; any other resolution needs a short player explanation before finalization. Equal definition totals with different issue origins or craftsmanship are not interchangeable.
 
-Each owned item uses a durable `instance_id` and immutable catalogue `definition_id`. Weapons and armour are quantity-one records; stackable ammunition and ordinary gear may use a positive quantity. Location is `equipped`, `carried`, or `stored`; custody belongs to the character, squad, or the character's declared Comrade. An unresolved definition remains authoritative and visible, but blocks finalization rather than being deleted.
+Each owned item uses a durable `instance_id` and immutable catalogue `definition_id`. Weapons and armour are quantity-one records; stackable ammunition and ordinary gear may use a positive quantity. Location is `equipped`, `carried`, or `stored`; custody belongs to the character, squad, or the character's declared Comrade. Every owned item and event snapshot carries a `modification_ids` array. It remains empty for non-weapons; ranged and melee weapon arrays contain stable `weapon_upgrade` definition IDs. Craftsmanship is likewise an individual weapon characteristic, but grenades and missiles are always Common and accept no upgrades. An unresolved definition remains authoritative and visible, but blocks finalization rather than being deleted.
 
-Current owned inventory is authoritative. `inventory_events` provide an audit trail and are not an event-sourced combat simulation. Calculated names, weapon profiles, armour by location, and encumbrance belong only in `calculated_preview`.
+Current owned inventory is authoritative. `inventory_events` provide an audit trail and are not an event-sourced combat simulation. A successful upgrade installation or removal appends one `modification` event with the complete resulting item snapshot. Calculated names, base/final weapon profiles, calculation steps, final weight, armour by location, and encumbrance belong only in `calculated_preview`. Valid catalogue definitions that omit `weight_kg` contribute `0 kg`; missing base or upgrade definitions remain unresolved.
+
+Character v4 files migrate to v5 by initializing empty modification arrays while preserving their loadout and workflow lifecycle. Starting-grant craftsmanship is recovered from its issued item when possible, then from the referenced definition default, then Common. Existing v4 inventory is not reset. The seven old craftsmanship-specific weapon IDs remain accepted exact references and resolve to canonical base profiles, but new normal selection stores the base definition plus instance craftsmanship.
 
 ## Document identity, Save As, and Duplicate
 

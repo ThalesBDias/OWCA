@@ -19,7 +19,7 @@ Attacks, damage rolls, tests, current-magazine tracking, temporary Wounds, condi
 | v0.6.0 | Implemented | Weapon and equipment catalogue | Browse complete supported equipment definitions and weapon statistics |
 | v0.7.0 | Implemented development baseline | Character inventory and loadouts | Maintain owned gear, armour locations, loadout completeness, and carried weight |
 | v0.7.1 | Implemented development state | Player-facing loadout refinement | Prepare starting gear, add optional equipment, and finalize through a clear creation workflow |
-| v0.8.0 | Planned | Weapon modifications | Upgrade individual weapons and calculate compatible modified statistics |
+| v0.8.0 | Implemented development state | Weapon modifications | Upgrade individual weapons and calculate compatible modified statistics |
 | v0.9.0 | Planned | Campaign advancement | Award XP, manage lasting character changes, and advance Guardsmen and Comrades |
 | v0.10.0 | Planned | Player journal and editable dossier | Maintain notes and logs, then choose how they appear in normal or ink-saving exports |
 | v1.0.0 | Planned | Stable Core Guardsman release | Deliver a crash-safe, migration-safe, accessible, and release-quality application |
@@ -117,21 +117,26 @@ Implemented scope:
 
 This refinement changes presentation and the missing-weight calculation rule. It does not change the v4 inventory save model, audit semantics, ownership model, or interoperability schema.
 
-## v0.8.0 - Weapon modifications
+## v0.8.0 - Weapon modifications (implemented development state)
 
 Goal: attach upgrades to a particular owned weapon and produce explainable final statistics.
 
-Planned scope:
+Implemented scope:
 
-- add and remove supported modifications from an owned weapon instance;
-- filter or block known incompatible combinations;
+- choose Poor, Common, Good, or Best craftsmanship independently for every owned ranged or melee weapon, without craftsmanship-specific catalogue entries;
+- keep grenades and missiles at Common craftsmanship with no modification controls;
+- add and remove Mono, Compact, Red-dot laser sight, Telescopic sight, and Tripod/Bipod from a particular compatible weapon instance;
+- keep incompatible choices visible with player-facing reasons and enforce one sight per weapon;
 - preserve immutable base statistics;
 - calculate modifications through a documented, deterministic pipeline;
 - show base and modified values together;
 - retain craftsmanship, modifications, and notes independently for two weapons of the same type;
 - identify the source of every changed statistic;
-- include modified weapon records in save files and printable dossiers; and
-- add compatibility, ordering, and round-trip tests.
+- include modified weapon records in state v5/schema `1.4.0`, audit events, shared calculated previews, carried weight, Armoury details, and printable dossiers;
+- migrate v4 inventory without resetting finalized lifecycle state;
+- preserve seven legacy craftsmanship IDs for exact lookup while hiding them from normal selection;
+- count an omitted valid weight as zero while leaving missing definitions unresolved; and
+- cover compatibility, ordering, independent instances, migration, round trips, responsive UI, and real-renderer export with focused tests.
 
 Temporary bonuses, firing-mode choices, ammunition expenditure, jams, and combat damage remain outside this pipeline.
 

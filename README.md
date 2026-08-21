@@ -1,4 +1,4 @@
-# Only War Character Assistant v0.7.1 development
+# Only War Character Assistant v0.8.0 development
 
 This module is a data-driven Godot 4 regiment and Guardsman creation assistant. Regiment creation includes every Core Rulebook option in the five supported categories: 8 Home Worlds, 9 Commanding Officers, 8 Regiment Types, 7 Training Doctrines, and 7 Equipment Doctrines. The current character-creation testing slice implements the five Core Guardsman Specialities: Heavy Gunner, Medic, Operator, Sergeant, and Weapon Specialist. Entries were checked against the supplied Only War Core Rulebook PDF; content files record printed book pages rather than PDF viewer indices.
 
@@ -44,6 +44,7 @@ OWCA/
     inventory_rules_repository.gd Carrying-capacity data loading and validation
     character_inventory_service.gd Owned-item mutations and audit events
     character_inventory_calculator.gd Weight, encumbrance, armour, and definition projection
+    weapon_modification_calculator.gd Per-instance craftsmanship, compatibility, and final weapon profiles
     interoperability_contract.gd Shared public-schema and extension validation
     document_identity.gd       Durable UUID generation and validation
     atomic_json_store.gd       Validated atomic writes, backups, and recovery
@@ -85,6 +86,9 @@ OWCA/
     character_inventory_calculator_test.gd Weight, encumbrance, armour, and missing-definition tests
     inventory_ui_test.gd         Shared editor, landing workflow, and minimum-window tests
     printable_loadout_test.gd    Printable owned-loadout projection tests
+    weapon_modification_catalog_test.gd Craftsmanship and upgrade data-contract tests
+    weapon_modification_calculator_test.gd Deterministic final-profile tests
+    weapon_modification_service_test.gd Atomic install/remove and independent-instance tests
 ```
 
 ## Run
@@ -134,7 +138,9 @@ Character creation also provides optional rolls for all nine base Characteristic
 
 The v0.5 development slice expands the ordered starting-XP ledger into a complete Core Talent browser. Its 124 entries and supported specialisations can be searched by name, brief effect, or prerequisite and filtered by Tier, Aptitude, prerequisite state, and purchase state. Every Talent displays its calculated Aptitude-based XP cost, short rules summary, prerequisites, availability reason, and Core Rulebook reference. Specialist, implant-dependent, Psy Rating, and variable Logistics-cost Talents remain visible but are disabled whenever OWCA cannot represent their required choice or state safely.
 
-The v0.6 Armoury remains the immutable definition source. v0.7 turns calculated starting grants into durable owned-item instances. In Create Character, the player-facing Loadout stage is limited to Starting Equipment, Add Optional Equipment, and Review and Finalize: players prepare starting equipment with **Prepare Starting Equipment**, then intact prepared grants reconcile automatically; optional equipment defaults to the character with Common craftsmanship in the carried location, and the stage keeps item profiles, armour, and carried weight concise. Manage Loadout is the detailed maintenance workflow, where players can add, remove, equip, carry, store, transfer, split, reconcile, and annotate equipment; manage custody and provenance; and review audit history. Weapon upgrades and modified profiles remain v0.8.
+The v0.6 Armoury remains the immutable definition source, while v0.7 turns calculated starting grants into durable owned-item instances. In Create Character, the player-facing Loadout stage is limited to Starting Equipment, Add Optional Equipment, and Review and Finalize: players prepare starting equipment with **Prepare Starting Equipment**, then intact prepared grants reconcile automatically; optional equipment defaults to the character with Common craftsmanship in the carried location, and the stage keeps item profiles, armour, and carried weight concise. Manage Loadout is the detailed maintenance workflow, where players can add, remove, equip, carry, store, transfer, split, reconcile, and annotate equipment; manage custody and provenance; and review audit history.
+
+v0.8 adds Poor, Common, Good, or Best craftsmanship to each individual ranged or melee weapon and supports the five Core upgrades already represented by the catalogue: Mono, Compact, Red-dot laser sight, Telescopic sight, and Tripod/Bipod. Normal selection shows one base weapon entry—so a Good M36 lasgun and a Good las carbine are separate owned instances, not separate catalogue definitions. Grenades and missiles remain Common and cannot receive upgrades. Manage Loadout explains compatibility, shows immutable base and calculated final profiles, and keeps two copies independent. Inventory weight and the printable dossier consume the same final projection; a valid definition with no `weight_kg` contributes `0 kg`, while a missing definition remains unresolved.
 
 The character workflow is responsive down to a 960x650 minimum window. Advancement actions remain inside their cards, horizontal stage scrolling is disabled, and the live-summary column automatically hides below 1100 pixels so the active form keeps usable space.
 

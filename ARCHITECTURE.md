@@ -34,7 +34,7 @@ Rules data must not depend on UI node names. Long copyrighted text is deliberate
 State objects contain user-authored inputs:
 
 - `RegimentState` stores option IDs and resolved regiment-level choices.
-- `CharacterState` stores the loaded regiment snapshot, rolled base values, manual adjustments, individual choices, and the ordered XP-purchase ledger.
+- `CharacterState` stores the loaded regiment snapshot, rolled base values, manual adjustments, individual choices, the ordered XP-purchase ledger, and authoritative owned-item state including per-weapon craftsmanship and installed modification IDs.
 
 State must remain serializable. Calculated Characteristics, final Skills, final equipment, and XP totals do not belong in state because they can be reproduced from inputs and current rules data.
 
@@ -65,6 +65,8 @@ Calculators are deterministic engines. Given the same state and rules data, they
 8. normalize Skills, Talents, equipment, sources, errors, and warnings for consumers.
 
 `CharacterAdvancementCalculator` replays purchases in order because a purchase can change the cost or legality of every later purchase. Removing an earlier purchase intentionally causes later entries to be recalculated.
+
+`WeaponModificationCalculator` resolves legacy craftsmanship aliases to immutable base definitions, validates the complete installed-upgrade set, applies craftsmanship before modifications in stable data-defined order, and returns base/final profiles, final weight, situational effects, and source-labelled calculation steps. It treats an omitted valid base weight as zero; missing base or modification definitions remain invalid and unresolved.
 
 Calculators return dictionaries because their results combine several heterogeneous catalogs. Result keys form an internal contract used by the UI and exporters; changes therefore require regression tests.
 
@@ -132,19 +134,19 @@ Every bug fix should add a test that fails before the fix. Every new rules-data 
 
 ## Equipment architecture
 
-`EquipmentDataRepository` owns the v0.6 immutable catalogue and is shared by the regiment and character repositories. Equipment work distinguishes definitions from future owned instances:
+`EquipmentDataRepository` owns the immutable catalogue and is shared by the regiment and character repositories. Equipment work distinguishes definitions from owned instances:
 
 - a weapon definition contains immutable base statistics;
 - an owned weapon instance has a unique ID, craftsmanship, modifications, and notes;
 - temporary ammunition belongs to session/loadout state rather than the immutable definition; and
 - modified statistics are calculated through a documented pipeline rather than written back into base data.
 
-The read-only Armoury consumes definitions directly. v0.7 now gives every owned weapon or armour piece an independent durable instance without duplicating or mutating catalogue rules; v0.8 can attach modifications to those instances.
+The seven old craftsmanship-specific IDs remain exact-lookup legacy aliases, but normal Armoury and add-equipment selection expose only canonical base definitions. Craftsmanship rules and the five supported upgrade operations live in validated catalogue data. The read-only Armoury explains those rules without mutating them; each owned ranged or melee weapon independently selects craftsmanship and installed upgrades. Grenades and missiles are outside this pipeline.
 
 ## Inventory architecture
 
-`CharacterState` owns current item instances, a minimal Comrade identity, provenance-aware starting-grant reconciliation, explicit loadout state, and append-only audit events. Current ownership is authoritative; events explain issue, acquisition, exchange, transfer, loss, and corrections but are not replayed as a gameplay simulation. Grant-owned stacks cannot absorb later acquisitions or have their issue provenance rewritten, so rebuilding creation gear cannot delete later equipment.
+`CharacterState` owns current item instances, a minimal Comrade identity, provenance-aware starting-grant reconciliation, explicit loadout state, and append-only audit events. Current ownership is authoritative; events explain issue, acquisition, exchange, transfer, modification, loss, and corrections but are not replayed as a gameplay simulation. Grant-owned stacks cannot absorb later acquisitions or have their issue provenance rewritten, so rebuilding creation gear cannot delete later equipment.
 
-`CharacterInventoryService` is the only mutation boundary used by the UI. It materializes starting grants idempotently, preserves source quantities when packages merge, splits stacks without fabricating acquisitions, and receives timestamps from callers. When creation choices change, it can rebuild only obsolete starting-issue records while preserving later acquisitions and append-only history. `CharacterInventoryCalculator` joins saved instances to `EquipmentDataRepository`, applies the data-driven carrying table from `InventoryRulesRepository`, selects the highest equipped armour AP per location, and keeps missing definitions visible as unresolved player records.
+`CharacterInventoryService` is the only mutation boundary used by the UI. It materializes starting grants idempotently, preserves source quantities when packages merge, splits stacks without fabricating acquisitions, validates complete weapon profiles before changing craftsmanship or upgrades, and receives timestamps from callers. When creation choices change, it can rebuild only obsolete starting-issue records while preserving unchanged weapon instances, later acquisitions, and append-only history. `CharacterInventoryCalculator` joins saved instances to `EquipmentDataRepository`, attaches the shared final weapon projection, applies its modified weight through the data-driven carrying table from `InventoryRulesRepository`, selects the highest equipped armour AP per location, and keeps missing definitions visible as unresolved player records.
 
 `CharacterInventoryEditor` is a reusable presentation control. Both the creation-stage Loadout page and standalone Manage Loadout scene use it; persistence, calculations, and audit rules therefore remain identical in both workflows. Its item and reconciliation forms stack vertically at the minimum window width. Printable loadout projection paginates overflow and includes the minimal Comrade identity without printing the complete audit ledger.
