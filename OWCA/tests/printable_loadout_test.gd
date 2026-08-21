@@ -8,6 +8,12 @@ var _failures := 0
 func _init() -> void:
 	var sheet := PrintableCharacterSheet.new()
 	_assert_true(sheet.has_method("build_loadout_lines"), "printable sheet exposes its loadout projection")
+	_assert_true(sheet.has_method("get_identity_layout_metrics"), "printable sheet exposes testable identity layout bounds")
+	if sheet.has_method("get_identity_layout_metrics"):
+		sheet.font = ThemeDB.fallback_font
+		var identity_metrics := sheet.call("get_identity_layout_metrics") as Dictionary
+		_assert_true(float(identity_metrics.get("character_name_top", 0.0)) >= float(identity_metrics.get("header_bottom", 1.0)), "character name begins below the Identification header band")
+		_assert_true(float(identity_metrics.get("player_label_top", 0.0)) >= float(identity_metrics.get("header_bottom", 1.0)), "player label begins below the Identification header band")
 	if sheet.has_method("build_loadout_lines"):
 		var repository := EquipmentDataRepository.new()
 		_assert_true(repository.load_data() == OK, "equipment catalogue loads for printable weapon fixture")

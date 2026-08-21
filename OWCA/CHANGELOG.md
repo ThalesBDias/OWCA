@@ -67,6 +67,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- Kept dossier identity text below the Identification header band when Godot's fallback font is used.
 - Valid catalogue definitions with no printed weight now count as `0 kg`; only missing definitions remain unresolved and block loadout finalization.
 
 ### Known limitations

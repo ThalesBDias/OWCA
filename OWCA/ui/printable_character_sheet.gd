@@ -15,6 +15,12 @@ const OXBLOOD_DARK := Color("#461711")
 const BRASS := Color("#b58a38")
 const HAZARD := Color("#d29a1e")
 const WHITE_INK := Color("#f3ead4")
+const PANEL_HEADER_HEIGHT := 74.0
+const IDENTITY_PANEL := Rect2(130, 352, 2220, 210)
+const IDENTITY_NAME_POSITION := Vector2(175, 493)
+const IDENTITY_NAME_FONT_SIZE := 60
+const IDENTITY_PLAYER_LABEL_POSITION := Vector2(1510, 455)
+const IDENTITY_PLAYER_LABEL_FONT_SIZE := 25
 
 var character_state: CharacterState
 var calculation: Dictionary = {}
@@ -102,15 +108,14 @@ func _draw_header(subtitle: String) -> void:
 
 func _draw_page_one() -> void:
 	_draw_header("Primary Character Sheet")
-	var identity := Rect2(130, 352, 2220, 210)
-	_draw_panel(identity, "IDENTIFICATION", "I")
-	_draw_text(character_state.character_name if character_state != null else "Unnamed Character", Vector2(175, 452), 60, OXBLOOD_DARK, 1300)
-	_draw_text("PLAYER", Vector2(1510, 420), 25, INK_MUTED)
-	_draw_text(_value(character_state.player_name if character_state != null else ""), Vector2(1510, 462), 36, INK, 760)
-	_draw_text("REGIMENT", Vector2(175, 515), 24, INK_MUTED)
-	_draw_text(str(calculation.get("regiment_name", "-")), Vector2(355, 515), 31, INK, 900)
-	_draw_text("SPECIALITY", Vector2(1320, 515), 24, INK_MUTED)
-	_draw_text(str(calculation.get("speciality_name", "-")), Vector2(1520, 515), 31, INK, 760)
+	_draw_panel(IDENTITY_PANEL, "IDENTIFICATION", "I")
+	_draw_text(character_state.character_name if character_state != null else "Unnamed Character", IDENTITY_NAME_POSITION, IDENTITY_NAME_FONT_SIZE, OXBLOOD_DARK, 1300)
+	_draw_text("PLAYER", IDENTITY_PLAYER_LABEL_POSITION, IDENTITY_PLAYER_LABEL_FONT_SIZE, INK_MUTED)
+	_draw_text(_value(character_state.player_name if character_state != null else ""), Vector2(1510, 494), 36, INK, 760)
+	_draw_text("REGIMENT", Vector2(175, 540), 24, INK_MUTED)
+	_draw_text(str(calculation.get("regiment_name", "-")), Vector2(355, 540), 31, INK, 900)
+	_draw_text("SPECIALITY", Vector2(1320, 540), 24, INK_MUTED)
+	_draw_text(str(calculation.get("speciality_name", "-")), Vector2(1520, 540), 31, INK, 760)
 
 	var characteristics_panel := Rect2(130, 585, 2220, 390)
 	_draw_panel(characteristics_panel, "CHARACTERISTICS", "1")
@@ -254,11 +259,20 @@ func _draw_panel(rect: Rect2, title: String, number: String) -> void:
 	draw_rect(rect, Color(PARCHMENT, 0.92), true)
 	draw_rect(rect, INK, false, 7.0)
 	draw_rect(Rect2(rect.position + Vector2(12, 12), rect.size - Vector2(24, 24)), INK_MUTED, false, 2.0)
-	draw_rect(Rect2(rect.position, Vector2(rect.size.x, 74)), Color(PARCHMENT_DARK, 0.7), true)
-	draw_rect(Rect2(rect.position, Vector2(82, 74)), OXBLOOD, true)
+	draw_rect(Rect2(rect.position, Vector2(rect.size.x, PANEL_HEADER_HEIGHT)), Color(PARCHMENT_DARK, 0.7), true)
+	draw_rect(Rect2(rect.position, Vector2(82, PANEL_HEADER_HEIGHT)), OXBLOOD, true)
 	_draw_text(number, rect.position + Vector2(0, 53), 37, WHITE_INK, 82, HORIZONTAL_ALIGNMENT_CENTER)
 	_draw_text(title, rect.position + Vector2(105, 53), 36, OXBLOOD_DARK, rect.size.x - 130)
 	draw_line(Vector2(rect.position.x + 100, rect.position.y + 68), Vector2(rect.end.x - 20, rect.position.y + 68), INK_MUTED, 2.0)
+
+
+func get_identity_layout_metrics() -> Dictionary:
+	var layout_font := font if font != null else ThemeDB.fallback_font
+	return {
+		"header_bottom": IDENTITY_PANEL.position.y + PANEL_HEADER_HEIGHT,
+		"character_name_top": IDENTITY_NAME_POSITION.y - layout_font.get_ascent(IDENTITY_NAME_FONT_SIZE),
+		"player_label_top": IDENTITY_PLAYER_LABEL_POSITION.y - layout_font.get_ascent(IDENTITY_PLAYER_LABEL_FONT_SIZE)
+	}
 
 
 func _draw_text(text: String, position: Vector2, font_size: int, colour: Color, width: float = -1.0, alignment: HorizontalAlignment = HORIZONTAL_ALIGNMENT_LEFT) -> void:
