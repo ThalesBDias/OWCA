@@ -11,7 +11,7 @@ const InventoryService = preload("res://OWCA/scripts/character_inventory_service
 func _init() -> void:
 	var service_script := load("res://OWCA/scripts/character_inventory_service.gd")
 	_assert_true(service_script != null, "inventory service script is available")
-	_test_v4_state_defaults()
+	_test_v5_state_defaults()
 	_test_starting_loadout_materializes_once()
 	_test_mixed_issue_origins_materialize_separately()
 	_test_stackable_quantity_splits_safely()
@@ -35,10 +35,10 @@ func _init() -> void:
 	quit(0)
 
 
-func _test_v4_state_defaults() -> void:
+func _test_v5_state_defaults() -> void:
 	var state := CharacterState.new()
 	var saved := state.to_dict()
-	_assert_equal(saved.get("version"), 4, "character state writes version 4")
+	_assert_equal(saved.get("version"), 5, "character state writes version 5")
 	_assert_equal(saved.get("loadout_state"), "unprepared", "new characters begin with an unprepared loadout")
 	_assert_equal(saved.get("comrade"), {}, "new characters have no Comrade identity")
 	_assert_equal(saved.get("starting_loadout"), [], "new characters have no materialized grants")
@@ -68,6 +68,10 @@ func _test_starting_loadout_materializes_once() -> void:
 	_assert_true(not (state.starting_loadout[0].get("issued_instance_ids", []) as Array).is_empty(), "grants retain their issued durable item IDs")
 	_assert_equal(state.owned_items.size(), 5, "stackable grants become one owned row each")
 	_assert_equal(state.inventory_events.size(), 5, "materialization records one issue event per row")
+	for item: Dictionary in state.owned_items:
+		_assert_equal(item.get("modification_ids"), [], "materialized items start without modifications")
+	for event: Dictionary in state.inventory_events:
+		_assert_equal((event.get("item_snapshot", {}) as Dictionary).get("modification_ids"), [], "issue snapshots start without modifications")
 	_assert_equal(_item_quantity(state.owned_items, "charge_pack"), 4, "ammunition keeps catalogue-unit quantity")
 	_assert_equal(_item_custodian(state.owned_items, "medikit"), "squad", "per-squad grants use squad custody")
 	_assert_equal(_item_field(state.owned_items, "flak_vest", "location"), "equipped", "starting armour is equipped by default")

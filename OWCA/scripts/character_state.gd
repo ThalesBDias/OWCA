@@ -13,7 +13,8 @@ extends RefCounted
 signal changed
 
 ## State schema version nested inside the versioned character-file envelope.
-const SAVE_VERSION := 4
+const SAVE_VERSION := 5
+const SUPPORTED_SAVE_VERSIONS: Array[int] = [1, 2, 3, 4, SAVE_VERSION]
 const WORKFLOW_DRAFT := "draft"
 const WORKFLOW_COMPLETE := "creation_complete"
 const WORKFLOW_CAMPAIGN := "campaign_active"
@@ -26,7 +27,7 @@ const ITEM_LOCATIONS: Array[String] = ["equipped", "carried", "stored"]
 const ITEM_ORIGINS: Array[String] = ["standard_issue", "speciality_issue", "later_issue", "exchange", "acquisition", "transfer", "correction"]
 const CRAFTSMANSHIP_VALUES: Array[String] = ["Poor", "Common", "Good", "Best"]
 const CUSTODIAN_TYPES: Array[String] = ["character", "comrade", "squad"]
-const INVENTORY_EVENT_TYPES: Array[String] = ["issue", "acquisition", "exchange", "transfer", "loss", "quantity", "correction"]
+const INVENTORY_EVENT_TYPES: Array[String] = ["issue", "acquisition", "exchange", "transfer", "loss", "quantity", "correction", "modification"]
 const STARTING_GRANT_RECONCILIATIONS: Array[String] = ["unresolved", "present", "exchange", "loss", "transfer", "correction"]
 ## Canonical order shared by entry forms, calculations, exports, and tests.
 const CHARACTERISTIC_ORDER: Array[String] = [
@@ -223,8 +224,8 @@ func to_dict() -> Dictionary:
 		"comrade": comrade.duplicate(true),
 		"loadout_state": loadout_state,
 		"starting_loadout": starting_loadout.duplicate(true),
-		"owned_items": owned_items.duplicate(true),
-		"inventory_events": inventory_events.duplicate(true)
+		"owned_items": _serialized_owned_items(),
+		"inventory_events": _serialized_inventory_events()
 	}
 
 
@@ -232,7 +233,7 @@ func to_dict() -> Dictionary:
 ## invalid container types or unsupported versions reject the entire state.
 func from_dict(value: Dictionary) -> Error:
 	var version := int(value.get("version", 0))
-	if version not in [1, 2, 3, SAVE_VERSION]:
+	if version not in SUPPORTED_SAVE_VERSIONS:
 		return ERR_INVALID_DATA
 	for field_name in ["regiment", "base_characteristics", "manual_adjustments", "regiment_resolutions", "speciality_resolutions"]:
 		if not value.get(field_name, {}) is Dictionary:
@@ -261,7 +262,7 @@ func from_dict(value: Dictionary) -> Error:
 		# Normalize it through RegimentState so every newly written version-3
 		# character satisfies the current public schema. A version-3 character
 		# that claims to be current but embeds an old snapshot is malformed.
-		if version >= SAVE_VERSION and int(loaded_regiment.get("version", 0)) != RegimentState.SAVE_VERSION:
+		if version >= 4 and int(loaded_regiment.get("version", 0)) != RegimentState.SAVE_VERSION:
 			return ERR_INVALID_DATA
 		var migrated_regiment := RegimentState.new()
 		if migrated_regiment.from_dict(loaded_regiment) != OK:
@@ -289,8 +290,8 @@ func from_dict(value: Dictionary) -> Error:
 			var clean_id := str(advance_id).strip_edges()
 			if not clean_id.is_empty():
 				purchased_advances.append(clean_id)
-	if version >= SAVE_VERSION:
-		if not _load_inventory_data(value):
+	if version >= 4:
+		if not _load_inventory_data(value, version):
 			return ERR_INVALID_DATA
 	else:
 		# A pre-inventory completion cannot satisfy v0.7's stronger lifecycle
@@ -364,7 +365,7 @@ func _mark_creation_draft() -> void:
 		loadout_state = LOADOUT_DRAFT
 
 
-func _load_inventory_data(value: Dictionary) -> bool:
+func _load_inventory_data(value: Dictionary, version: int) -> bool:
 	for field_name in ["comrade", "starting_loadout", "owned_items", "inventory_events"]:
 		var expected: Variant = {} if field_name == "comrade" else []
 		if not value.has(field_name) or typeof(value[field_name]) != typeof(expected):
@@ -417,6 +418,11 @@ func _load_inventory_data(value: Dictionary) -> bool:
 			return false
 		if not item.get("craftsmanship", "") is String or str(item.get("craftsmanship", "")) not in CRAFTSMANSHIP_VALUES or not item.get("note", "") is String:
 			return false
+		if version >= SAVE_VERSION:
+			if not _valid_modification_ids(item.get("modification_ids", null)):
+				return false
+		else:
+			item["modification_ids"] = []
 		if str(item.get("location", "")) not in ITEM_LOCATIONS or str(item.get("origin", "")) not in ITEM_ORIGINS:
 			return false
 		if not _custodian_is_valid(custodian, loaded_comrade):
@@ -441,6 +447,11 @@ func _load_inventory_data(value: Dictionary) -> bool:
 		var snapshot := event.get("item_snapshot", {}) as Dictionary
 		if str(snapshot.get("instance_id", "")) != str(event.get("instance_id", "")) or str(snapshot.get("definition_id", "")) != str(event.get("definition_id", "")) or not _is_positive_integer(snapshot.get("quantity", null)) or int(snapshot.get("quantity", 0)) != int(event.get("quantity", 0)):
 			return false
+		if version >= SAVE_VERSION:
+			if not _valid_modification_ids(snapshot.get("modification_ids", null)):
+				return false
+		else:
+			snapshot["modification_ids"] = []
 		event_ids[event_id] = true
 		loaded_events.append(event)
 	comrade = loaded_comrade
@@ -498,6 +509,41 @@ func _custodian_is_valid(value: Dictionary, loaded_comrade: Dictionary) -> bool:
 func _valid_stable_id(value: String) -> bool:
 	var pattern := RegEx.new()
 	return pattern.compile("^[a-z][a-z0-9_]*$") == OK and pattern.search(value) != null
+
+
+func _valid_modification_ids(value: Variant) -> bool:
+	if not value is Array:
+		return false
+	var seen: Dictionary = {}
+	for id_value: Variant in value:
+		if not id_value is String:
+			return false
+		var modification_id := str(id_value)
+		if not _valid_stable_id(modification_id) or seen.has(modification_id):
+			return false
+		seen[modification_id] = true
+	return true
+
+
+func _serialized_owned_items() -> Array[Dictionary]:
+	var output: Array[Dictionary] = []
+	for item: Dictionary in owned_items:
+		var serialized := item.duplicate(true)
+		if not serialized.get("modification_ids", null) is Array:
+			serialized["modification_ids"] = []
+		output.append(serialized)
+	return output
+
+
+func _serialized_inventory_events() -> Array[Dictionary]:
+	var output: Array[Dictionary] = []
+	for event: Dictionary in inventory_events:
+		var serialized := event.duplicate(true)
+		var snapshot := serialized.get("item_snapshot", {}) as Dictionary
+		if not snapshot.get("modification_ids", null) is Array:
+			snapshot["modification_ids"] = []
+		output.append(serialized)
+	return output
 
 
 func _is_positive_integer(value: Variant) -> bool:

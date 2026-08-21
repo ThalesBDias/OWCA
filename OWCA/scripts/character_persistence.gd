@@ -9,8 +9,8 @@ extends RefCounted
 ## internal/legacy envelope version for backwards compatibility.
 
 const FILE_FORMAT := "owca_character"
-const FILE_VERSION := 4
-const SUPPORTED_FILE_VERSIONS: Array[int] = [1, 2, 3, FILE_VERSION]
+const FILE_VERSION := 5
+const SUPPORTED_FILE_VERSIONS: Array[int] = [1, 2, 3, 4, FILE_VERSION]
 const SCHEMA_VERSION := InteroperabilityContract.SCHEMA_VERSION
 
 
@@ -128,10 +128,12 @@ func _build_migration_report(envelope: Dictionary) -> Array[String]:
 		report.append("Character state v%d will become v%d." % [state_version, CharacterState.SAVE_VERSION])
 	if state_version < 2:
 		report.append("Initialized an empty ordered advancement ledger.")
-	if state_version < CharacterState.SAVE_VERSION:
+	if state_version < 4:
 		report.append("Initialized an unprepared loadout; prepare and finalize starting equipment before completing creation.")
 		if str(state_data.get("workflow_state", CharacterState.WORKFLOW_DRAFT)) != CharacterState.WORKFLOW_DRAFT:
 			report.append("Returned the legacy character to draft because its starting loadout was not yet finalized.")
+	elif state_version == 4:
+		report.append("Initialized empty weapon modification state for existing owned items and audit snapshots.")
 	if not state_data.has("document_id"):
 		report.append("Generated a durable document ID.")
 	if not state_data.has("workflow_state"):
@@ -181,10 +183,49 @@ func _validate_inventory_catalogue(state: CharacterState, repository: EquipmentD
 		# Removed catalogue definitions remain visible and recoverable. They are
 		# deliberately blocked only when the player attempts finalization.
 		if definition.is_empty():
+			var unresolved_validation := _validate_unresolved_modification_ids(item, repository, "owned item")
+			if int(unresolved_validation.get("error", ERR_INVALID_DATA)) != OK:
+				return unresolved_validation
 			continue
 		if str(definition.get("category", "")) in ["ranged_weapon", "melee_weapon", "armour"] and int(item.get("quantity", 0)) != 1:
 			return { "error": ERR_INVALID_DATA, "message": "Weapons and armour must be stored as quantity-one owned instances." }
+		var item_validation := _validate_resolved_modifications(item, definition, repository, "owned item")
+		if int(item_validation.get("error", ERR_INVALID_DATA)) != OK:
+			return item_validation
+	for event: Dictionary in state.inventory_events:
+		var snapshot := event.get("item_snapshot", {}) as Dictionary
+		var definition := repository.get_item(str(snapshot.get("definition_id", "")))
+		if definition.is_empty():
+			var unresolved_validation := _validate_unresolved_modification_ids(snapshot, repository, "inventory event snapshot")
+			if int(unresolved_validation.get("error", ERR_INVALID_DATA)) != OK:
+				return unresolved_validation
+			continue
+		var snapshot_validation := _validate_resolved_modifications(snapshot, definition, repository, "inventory event snapshot")
+		if int(snapshot_validation.get("error", ERR_INVALID_DATA)) != OK:
+			return snapshot_validation
 	return { "error": OK }
+
+
+func _validate_resolved_modifications(item: Dictionary, definition: Dictionary, repository: EquipmentDataRepository, context: String) -> Dictionary:
+	var category := str(definition.get("category", ""))
+	var modification_ids := item.get("modification_ids", []) as Array
+	if category not in ["ranged_weapon", "melee_weapon"]:
+		if not modification_ids.is_empty():
+			return {"error": ERR_INVALID_DATA, "message": "A %s outside the ranged/melee weapon categories cannot have weapon modifications." % context}
+		return {"error": OK}
+	var calculation := WeaponModificationCalculator.new().calculate(item, repository)
+	if not bool(calculation.get("valid", false)):
+		return {"error": ERR_INVALID_DATA, "message": "Invalid weapon modifications in %s: %s" % [context, calculation.get("message", "calculation failed")]}
+	return {"error": OK}
+
+
+func _validate_unresolved_modification_ids(item: Dictionary, repository: EquipmentDataRepository, context: String) -> Dictionary:
+	for modification_value: Variant in item.get("modification_ids", []):
+		var modification_id := str(modification_value)
+		var modification := repository.get_item(modification_id)
+		if modification.is_empty() or str(modification.get("category", "")) != "weapon_upgrade":
+			return {"error": ERR_INVALID_DATA, "message": "The %s references missing weapon modification '%s'." % [context, modification_id]}
+	return {"error": OK}
 
 
 func _missing_inventory_definition_ids(state: CharacterState, repository: EquipmentDataRepository) -> Array[String]:

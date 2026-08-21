@@ -310,6 +310,7 @@ func _build_item(definition_id: String, quantity: int, craftsmanship: String, or
 		"definition_id": definition_id,
 		"quantity": quantity,
 		"craftsmanship": craftsmanship,
+		"modification_ids": [],
 		"origin": origin,
 		"location": location,
 		"custodian": custodian.duplicate(true),
@@ -318,6 +319,9 @@ func _build_item(definition_id: String, quantity: int, craftsmanship: String, or
 
 
 func _build_event(event_type: String, item: Dictionary, reason: String, timestamp_utc: String) -> Dictionary:
+	var snapshot := item.duplicate(true)
+	if not snapshot.get("modification_ids", null) is Array:
+		snapshot["modification_ids"] = []
 	return {
 		"event_id": DocumentIdentity.generate(),
 		"timestamp_utc": timestamp_utc,
@@ -326,7 +330,7 @@ func _build_event(event_type: String, item: Dictionary, reason: String, timestam
 		"definition_id": str(item.get("definition_id", "")),
 		"quantity": int(item.get("quantity", 1)),
 		"reason": reason.strip_edges(),
-		"item_snapshot": item.duplicate(true)
+		"item_snapshot": snapshot
 	}
 
 

@@ -16,7 +16,7 @@
   ],
   "properties": {
     "format": { "const": "owca_character" },
-    "version": { "const": 4 },
+    "version": { "const": 5 },
     "schema_version": { "$ref": "#/$defs/schema_version" },
     "producer": { "$ref": "#/$defs/producer" },
     "saved_at_utc": { "type": "string", "minLength": 1 },
@@ -131,7 +131,7 @@
         "inventory_events"
       ],
       "properties": {
-        "version": { "const": 4 },
+        "version": { "const": 5 },
         "document_id": { "$ref": "#/$defs/document_id" },
         "workflow_state": { "enum": ["draft", "creation_complete", "campaign_active"] },
         "name": { "type": "string", "minLength": 1 },
@@ -178,7 +178,7 @@
         "special_rules": { "type": "array", "items": { "type": "object" } },
         "equipment": { "$ref": "#/$defs/catalog_results" },
         "starting_equipment": { "$ref": "#/$defs/catalog_results" },
-        "inventory": { "type": "object" },
+        "inventory": { "description": "Non-authoritative inventory projection, including calculated final weapon profiles and weights when available.", "type": "object" },
         "wounds_modifier": { "type": "integer" },
         "wounds": { "type": "integer" },
         "fate_points": { "type": "integer" },
@@ -244,12 +244,13 @@
     },
     "owned_item": {
       "type": "object",
-      "required": ["instance_id", "definition_id", "quantity", "craftsmanship", "origin", "location", "custodian", "note"],
+      "required": ["instance_id", "definition_id", "quantity", "craftsmanship", "modification_ids", "origin", "location", "custodian", "note"],
       "properties": {
         "instance_id": { "$ref": "#/$defs/document_id" },
         "definition_id": { "$ref": "#/$defs/stable_id" },
         "quantity": { "type": "integer", "minimum": 1 },
         "craftsmanship": { "enum": ["Poor", "Common", "Good", "Best"] },
+        "modification_ids": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/stable_id" } },
         "origin": { "enum": ["standard_issue", "speciality_issue", "later_issue", "exchange", "acquisition", "transfer", "correction"] },
         "location": { "enum": ["equipped", "carried", "stored"] },
         "custodian": { "$ref": "#/$defs/custodian" },
@@ -263,18 +264,19 @@
       "properties": {
         "event_id": { "$ref": "#/$defs/document_id" },
         "timestamp_utc": { "type": "string", "format": "date-time", "pattern": "Z$" },
-        "type": { "enum": ["issue", "acquisition", "exchange", "transfer", "loss", "quantity", "correction"] },
+        "type": { "enum": ["issue", "acquisition", "exchange", "transfer", "loss", "quantity", "correction", "modification"] },
         "instance_id": { "$ref": "#/$defs/document_id" },
         "definition_id": { "$ref": "#/$defs/stable_id" },
         "quantity": { "type": "integer", "minimum": 1 },
         "reason": { "type": "string" },
         "item_snapshot": {
           "type": "object",
-          "required": ["instance_id", "definition_id", "quantity"],
+          "required": ["instance_id", "definition_id", "quantity", "modification_ids"],
           "properties": {
             "instance_id": { "$ref": "#/$defs/document_id" },
             "definition_id": { "$ref": "#/$defs/stable_id" },
-            "quantity": { "type": "integer", "minimum": 1 }
+            "quantity": { "type": "integer", "minimum": 1 },
+            "modification_ids": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/stable_id" } }
           }
         }
       },
