@@ -1,9 +1,9 @@
 extends Control
 
-## Read-only browser for immutable v0.6 equipment definitions.
+## Read-only browser for immutable equipment and weapon-upgrade definitions.
 ##
 ## This scene intentionally has no Add, Equip, Buy, or ammunition controls.
-## Those actions require owned item instances and belong to the v0.7 inventory.
+## Those actions require owned item instances and belong to Manage Loadout.
 
 const LANDING_SCENE := "res://OWCA/ui/LandingPage.tscn"
 const CATEGORY_LABELS := {
@@ -83,7 +83,7 @@ func _build_interface() -> void:
 	title.add_theme_color_override("font_color", COLOUR_GOLD)
 	headings.add_child(title)
 	var subtitle := Label.new()
-	subtitle.text = "Read-only Core equipment definitions  |  ownership and loadouts arrive in v0.7"
+	subtitle.text = "Read-only Core equipment, craftsmanship, and upgrade reference"
 	subtitle.add_theme_color_override("font_color", COLOUR_MUTED)
 	headings.add_child(subtitle)
 
@@ -158,7 +158,7 @@ func _populate_availability_filter() -> void:
 	availability_filter.add_item("All availability")
 	availability_filter.set_item_metadata(0, "")
 	var values: Array[String] = []
-	for item: Dictionary in repository.get_items():
+	for item: Dictionary in repository.get_selectable_items():
 		var value := str(item.get("availability", ""))
 		if not value.is_empty() and value not in values:
 			values.append(value)
@@ -175,7 +175,7 @@ func _refresh_results() -> void:
 	var category := str(category_filter.get_item_metadata(category_filter.selected))
 	var availability := str(availability_filter.get_item_metadata(availability_filter.selected)) if availability_filter.item_count > 0 else ""
 	var matches: Array[Dictionary] = []
-	for item: Dictionary in repository.get_items():
+	for item: Dictionary in repository.get_selectable_items():
 		if category != "all" and str(item.get("category", "")) != category:
 			continue
 		if not availability.is_empty() and str(item.get("availability", "")) != availability:
@@ -231,10 +231,102 @@ func _select_item(item_id: String) -> void:
 	if not summary.is_empty():
 		lines.append("")
 		lines.append(summary)
+	if str(item.get("category", "")) == "weapon_upgrade":
+		_append_modification_details(lines, item)
 	lines.append("")
 	lines.append("[color=#a5ad9d]Stable ID: %s[/color]" % item.get("id", ""))
 	lines.append("[color=#a5ad9d]Source: %s[/color]" % repository.get_source_label(item.get("source", {}) as Dictionary))
 	details.text = "\n".join(lines)
+
+
+func _append_modification_details(lines: Array[String], item: Dictionary) -> void:
+	var modification := item.get("modification", {}) as Dictionary
+	var compatibility := modification.get("compatibility", {}) as Dictionary
+	var eligible: Array[String] = []
+	for selector_value: Variant in compatibility.get("any_of", []):
+		eligible.append(_format_compatibility_selector(selector_value as Dictionary))
+	if not eligible.is_empty():
+		lines.append("")
+		lines.append("[b]INSTALLATION[/b]")
+		lines.append("Eligible: %s" % " or ".join(eligible))
+	if str(modification.get("exclusive_group", "")) == "sight":
+		lines.append("One sight per weapon.")
+	var effects := modification.get("effects", []) as Array
+	if not effects.is_empty():
+		lines.append("[b]EFFECTS[/b]")
+		for effect_value: Variant in effects:
+			lines.append("- %s" % _format_modification_effect(effect_value as Dictionary))
+
+
+func _format_compatibility_selector(selector: Dictionary) -> String:
+	if selector.has("categories"):
+		var categories: Array[String] = []
+		for value: Variant in selector.get("categories", []):
+			categories.append(_category_label(str(value)))
+		return " or ".join(categories)
+	var classes: Array[String] = []
+	for value: Variant in selector.get("classes", []):
+		classes.append(str(value))
+	var class_text := " or ".join(classes)
+	var families: Array[String] = []
+	for value: Variant in selector.get("families", []):
+		families.append(str(value).replace("_", " "))
+	if not families.is_empty():
+		class_text += " (%s)" % ", ".join(families)
+	return class_text
+
+
+func _format_modification_effect(effect: Dictionary) -> String:
+	var operation := str(effect.get("operation", ""))
+	var target := str(effect.get("target", ""))
+	var value: Variant = effect.get("value")
+	var text := ""
+	match operation:
+		"numeric_multiply":
+			var target_label := _effect_target_label(target)
+			text = "Half %s" % target_label if is_equal_approx(float(value), 0.5) else "%s x%s" % [target_label, value]
+			if str(effect.get("rounding", "")) == "ceil":
+				text += " (round up)"
+		"numeric_add":
+			if target == "weight_kg":
+				text = "%s kg weapon weight" % _signed_number(float(value))
+			else:
+				text = "%s %s" % [_signed_number(float(value)), _effect_target_label(target)]
+		"quality_add":
+			text = "Adds the %s quality" % value
+		"quality_remove_prefix":
+			text = "Removes %s quality variants" % value
+		"situational":
+			text = str(effect.get("summary", "Situational rule applies"))
+		_:
+			text = "Validated weapon rule applies"
+	if operation != "situational":
+		var condition := effect.get("condition", {}) as Dictionary
+		if condition.has("quality_absent"):
+			text += " unless %s is present" % condition.get("quality_absent")
+		elif condition.has("quality_present"):
+			text += " when %s is present" % condition.get("quality_present")
+	return text.trim_suffix(".") + "."
+
+
+func _effect_target_label(target: String) -> String:
+	match target:
+		"weight_kg":
+			return "weapon weight"
+		"profile.range_m":
+			return "Range"
+		"profile.magazine":
+			return "Magazine"
+		"profile.damage_bonus":
+			return "Damage"
+		"profile.penetration":
+			return "Penetration"
+	return "weapon value"
+
+
+func _signed_number(value: float) -> String:
+	var text := str(int(value)) if is_equal_approx(value, roundf(value)) else str(value)
+	return "+%s" % text if value > 0.0 else text
 
 
 func _search_text(item: Dictionary) -> String:

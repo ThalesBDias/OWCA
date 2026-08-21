@@ -27,6 +27,11 @@ func _run() -> void:
 		state.purchase_advance(advance_id)
 	var calculation := CharacterCalculator.new().calculate(state, regiment_repository, character_repository)
 	_assert_true(bool(calculation.get("valid", false)), "example character is export-ready")
+	var example_weapon := _find_equipment(calculation.get("equipment", []) as Array, "lasgun_good")
+	_assert_true(not example_weapon.is_empty(), "example keeps the legacy Good M36 definition")
+	_assert_true("red_dot_laser_sight" in ((example_weapon.get("modification_ids", []) as Array)), "example contains an installed Red-dot sight")
+	_assert_equal((example_weapon.get("weapon", {}) as Dictionary).get("final_weight_kg", -1.0), 4.5, "example final weapon weight uses the installed sight")
+	var expected_pages := PrintableCharacterSheet.new().get_required_page_count(calculation, str(state.comrade.get("name", "")))
 
 	var output_path := OS.get_environment("OWCA_PDF_OUTPUT")
 	if output_path.is_empty():
@@ -40,9 +45,9 @@ func _run() -> void:
 	var pdf := FileAccess.get_file_as_bytes(output_path)
 	_assert_true(pdf.size() > 100000, "PDF contains rendered page data")
 	_assert_equal(pdf.slice(0, 5).get_string_from_ascii(), "%PDF-", "PDF signature is valid")
-	_assert_true(pdf.get_string_from_ascii().contains("/Count 2"), "PDF declares two pages")
+	_assert_true(pdf.get_string_from_ascii().contains("/Count %d" % expected_pages), "PDF declares the calculated page count")
 
-	for page in range(1, 3):
+	for page in range(1, expected_pages + 1):
 		var png_path := "%s_page_%d.png" % [output_path.trim_suffix(".pdf"), page]
 		_assert_true(FileAccess.file_exists(png_path), "PNG page %d exists" % page)
 		var image := Image.load_from_file(png_path)
@@ -50,6 +55,14 @@ func _run() -> void:
 
 	print("Character-sheet export test passed: %s" % output_path)
 	quit(0)
+
+
+func _find_equipment(items: Array, definition_id: String) -> Dictionary:
+	for item_value: Variant in items:
+		var item := item_value as Dictionary
+		if str(item.get("definition_id", "")) == definition_id:
+			return item
+	return {}
 
 
 func _assert_true(value: bool, message: String) -> void:

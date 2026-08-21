@@ -10,28 +10,28 @@
       "General",
       "Weapon Skill"
     ],
-    "bonus_xp": 0.0,
+    "bonus_xp": 0,
     "characteristic_bonuses": {
-      "Agility": 3.0,
-      "Ballistic Skill": 3.0,
-      "Fellowship": 3.0,
-      "Intelligence": 3.0,
-      "Perception": 3.0,
-      "Strength": 3.0,
-      "Toughness": 2.0,
-      "Weapon Skill": 3.0,
-      "Willpower": 3.0
+      "Agility": 3,
+      "Ballistic Skill": 3,
+      "Fellowship": 3,
+      "Intelligence": 3,
+      "Perception": 3,
+      "Strength": 3,
+      "Toughness": 2,
+      "Weapon Skill": 3,
+      "Willpower": 3
     },
     "characteristics": {
-      "Agility": 36.0,
-      "Ballistic Skill": 35.0,
-      "Fellowship": 30.0,
-      "Intelligence": 30.0,
-      "Perception": 33.0,
-      "Strength": 30.0,
-      "Toughness": 27.0,
-      "Weapon Skill": 30.0,
-      "Willpower": 30.0
+      "Agility": 36,
+      "Ballistic Skill": 35,
+      "Fellowship": 30,
+      "Intelligence": 30,
+      "Perception": 33,
+      "Strength": 30,
+      "Toughness": 27,
+      "Weapon Skill": 30,
+      "Willpower": 30
     },
     "equipment": [
       {
@@ -45,10 +45,12 @@
         "id": "basic_tools",
         "instance_id": "b9e1babe-ac9a-4cc9-a217-41aba07bdc7f",
         "location": "carried",
+        "modification_ids": [],
         "name": "Basic tools",
         "note": "",
         "origin": "standard_issue",
-        "quantity": 1.0
+        "quantity": 1.0,
+        "weight_kg": 0.0
       },
       {
         "category": "wargear",
@@ -61,10 +63,12 @@
         "id": "blanket",
         "instance_id": "2c0566a6-e1c6-457b-8ec5-ab2933e122d7",
         "location": "carried",
+        "modification_ids": [],
         "name": "Blanket and sleep bag",
         "note": "",
         "origin": "standard_issue",
-        "quantity": 1.0
+        "quantity": 1.0,
+        "weight_kg": 0.0
       },
       {
         "category": "ammunition",
@@ -77,10 +81,12 @@
         "id": "charge_pack",
         "instance_id": "47e51608-71ec-42c4-8437-e3ee6f3f62d4",
         "location": "carried",
+        "modification_ids": [],
         "name": "Charge pack",
         "note": "",
         "origin": "standard_issue",
-        "quantity": 4.0
+        "quantity": 4.0,
+        "weight_kg": 0.0
       },
       {
         "category": "wargear",
@@ -93,10 +99,12 @@
         "id": "cognomen_tags",
         "instance_id": "22beeff6-c973-440c-b05a-020dd9e3decf",
         "location": "carried",
+        "modification_ids": [],
         "name": "Cognomen tags or equivalent ID",
         "note": "",
         "origin": "standard_issue",
-        "quantity": 1.0
+        "quantity": 1.0,
+        "weight_kg": 0.0
       },
       {
         "category": "wargear",
@@ -109,10 +117,12 @@
         "id": "rations",
         "instance_id": "5cefec35-4554-4568-88a7-3d505376e3f5",
         "location": "carried",
+        "modification_ids": [],
         "name": "Combat sustenance rations (weeks)",
         "note": "",
         "origin": "standard_issue",
-        "quantity": 2.0
+        "quantity": 2.0,
+        "weight_kg": 0.0
       },
       {
         "category": "armour",
@@ -125,10 +135,12 @@
         "id": "flak_helmet",
         "instance_id": "008cd99c-b687-4a89-b5f7-5a2424a3ca40",
         "location": "equipped",
+        "modification_ids": [],
         "name": "Flak helmet",
         "note": "",
         "origin": "standard_issue",
-        "quantity": 1.0
+        "quantity": 1.0,
+        "weight_kg": 2.0
       },
       {
         "category": "armour",
@@ -141,10 +153,12 @@
         "id": "flak_vest",
         "instance_id": "143830f8-8560-4292-bf89-a2f5566cb9c8",
         "location": "equipped",
+        "modification_ids": [],
         "name": "Flak vest",
         "note": "",
         "origin": "standard_issue",
-        "quantity": 1.0
+        "quantity": 1.0,
+        "weight_kg": 5.0
       },
       {
         "category": "grenade_missile",
@@ -157,10 +171,12 @@
         "id": "frag_grenade",
         "instance_id": "4b00fbb4-5a97-498d-9581-46c3c2897ee9",
         "location": "carried",
+        "modification_ids": [],
         "name": "Frag grenade",
         "note": "",
         "origin": "standard_issue",
-        "quantity": 2.0
+        "quantity": 2.0,
+        "weight_kg": 0.5
       },
       {
         "category": "grenade_missile",
@@ -173,10 +189,12 @@
         "id": "frag_grenade",
         "instance_id": "813e2ec6-8429-4ba0-b460-8caf770a5430",
         "location": "carried",
+        "modification_ids": [],
         "name": "Frag grenade",
         "note": "",
         "origin": "speciality_issue",
-        "quantity": 4.0
+        "quantity": 4.0,
+        "weight_kg": 0.5
       },
       {
         "category": "wargear",
@@ -189,10 +207,12 @@
         "id": "lamp_pack",
         "instance_id": "57ccd215-f3b6-419b-a121-833b2bcd5fe5",
         "location": "carried",
+        "modification_ids": [],
         "name": "Glow-globe / lamp pack",
         "note": "",
         "origin": "standard_issue",
-        "quantity": 1.0
+        "quantity": 1.0,
+        "weight_kg": 0.5
       },
       {
         "category": "ranged_weapon",
@@ -205,10 +225,162 @@
         "id": "lasgun_good",
         "instance_id": "326caf8b-4f87-4ddf-9d0c-b684ae8b0b62",
         "location": "carried",
+        "modification_ids": [
+          "red_dot_laser_sight"
+        ],
         "name": "Good Craftsmanship M36 lasgun",
         "note": "",
         "origin": "speciality_issue",
-        "quantity": 1.0
+        "profile": {
+          "class": "Basic",
+          "damage": "1d10+3 E",
+          "magazine": 60.0,
+          "penetration": 0.0,
+          "qualities": [
+            "Reliable"
+          ],
+          "range_m": 100.0,
+          "rate_of_fire": "S/3/-",
+          "reload": "Full"
+        },
+        "quantity": 1.0,
+        "weapon": {
+          "base_profile": {
+            "class": "Basic",
+            "damage": "1d10+3 E",
+            "magazine": 60.0,
+            "penetration": 0.0,
+            "qualities": [
+              "Reliable"
+            ],
+            "range_m": 100.0,
+            "rate_of_fire": "S/3/-",
+            "reload": "Full"
+          },
+          "base_weight_kg": 4.0,
+          "canonical_definition_id": "m36_lasgun",
+          "code": "ok",
+          "final_profile": {
+            "class": "Basic",
+            "damage": "1d10+3 E",
+            "magazine": 60.0,
+            "penetration": 0.0,
+            "qualities": [
+              "Reliable"
+            ],
+            "range_m": 100.0,
+            "rate_of_fire": "S/3/-",
+            "reload": "Full"
+          },
+          "final_weight_kg": 4.5,
+          "installed_modifications": [
+            {
+              "availability": "Scarce",
+              "category": "weapon_upgrade",
+              "id": "red_dot_laser_sight",
+              "modification": {
+                "compatibility": {
+                  "any_of": [
+                    {
+                      "classes": [
+                        "Pistol"
+                      ]
+                    },
+                    {
+                      "classes": [
+                        "Basic"
+                      ],
+                      "families": [
+                        "las",
+                        "solid_projectile",
+                        "bolt",
+                        "low_tech",
+                        "plasma"
+                      ]
+                    }
+                  ]
+                },
+                "effects": [
+                  {
+                    "operation": "numeric_add",
+                    "target": "weight_kg",
+                    "value": 0.5
+                  },
+                  {
+                    "code": "single_shot_ballistic_skill",
+                    "operation": "situational",
+                    "summary": "+10 to Ballistic Skill Tests when firing a single shot.",
+                    "value": 10.0
+                  }
+                ],
+                "exclusive_group": "sight",
+                "order": 300.0
+              },
+              "name": "Red-dot laser sight",
+              "source": {
+                "book": "ow_core",
+                "page": 189.0
+              },
+              "summary": "A sighting aid for eligible ranged weapons.",
+              "weight_kg": 0.5
+            }
+          ],
+          "message": "Weapon profile calculated.",
+          "situational_effects": [
+            {
+              "code": "single_shot_ballistic_skill",
+              "label": "Red-dot laser sight",
+              "operation": "situational",
+              "source_id": "red_dot_laser_sight",
+              "source_type": "modification",
+              "summary": "+10 to Ballistic Skill Tests when firing a single shot.",
+              "value": 10.0
+            }
+          ],
+          "steps": [
+            {
+              "after": [
+                "Reliable"
+              ],
+              "before": [
+                "Reliable"
+              ],
+              "label": "Good Craftsmanship",
+              "source_id": "Good",
+              "source_type": "craftsmanship",
+              "summary": "Adds Reliable.",
+              "target": "profile.qualities"
+            },
+            {
+              "after": 4.5,
+              "before": 4.0,
+              "label": "Red-dot laser sight",
+              "source_id": "red_dot_laser_sight",
+              "source_type": "modification",
+              "summary": "weight_kg changes from 4.0 to 4.5.",
+              "target": "weight_kg"
+            },
+            {
+              "after": {
+                "code": "single_shot_ballistic_skill",
+                "label": "Red-dot laser sight",
+                "operation": "situational",
+                "source_id": "red_dot_laser_sight",
+                "source_type": "modification",
+                "summary": "+10 to Ballistic Skill Tests when firing a single shot.",
+                "value": 10.0
+              },
+              "before": null,
+              "label": "Red-dot laser sight",
+              "source_id": "red_dot_laser_sight",
+              "source_type": "modification",
+              "summary": "+10 to Ballistic Skill Tests when firing a single shot.",
+              "target": "situational.single_shot_ballistic_skill"
+            }
+          ],
+          "valid": true
+        },
+        "weight_kg": 4.5
       },
       {
         "category": "wargear",
@@ -221,10 +393,12 @@
         "id": "grooming_kit",
         "instance_id": "982ccb09-ac15-45b8-af7f-e6f529957784",
         "location": "carried",
+        "modification_ids": [],
         "name": "Grooming kit",
         "note": "",
         "origin": "standard_issue",
-        "quantity": 1.0
+        "quantity": 1.0,
+        "weight_kg": 0.0
       },
       {
         "category": "melee_weapon",
@@ -237,10 +411,44 @@
         "id": "knife",
         "instance_id": "1e0f025c-faa4-429d-9e0d-8085bf3ed3a2",
         "location": "carried",
+        "modification_ids": [],
         "name": "Knife",
         "note": "",
         "origin": "standard_issue",
-        "quantity": 1.0
+        "profile": {
+          "class": "Melee/Thrown",
+          "damage": "1d5 R",
+          "penetration": 0.0,
+          "qualities": [],
+          "range_m": 5.0
+        },
+        "quantity": 1.0,
+        "weapon": {
+          "base_profile": {
+            "class": "Melee/Thrown",
+            "damage": "1d5 R",
+            "penetration": 0.0,
+            "qualities": [],
+            "range_m": 5.0
+          },
+          "base_weight_kg": 1.0,
+          "canonical_definition_id": "knife",
+          "code": "ok",
+          "final_profile": {
+            "class": "Melee/Thrown",
+            "damage": "1d5 R",
+            "penetration": 0.0,
+            "qualities": [],
+            "range_m": 5.0
+          },
+          "final_weight_kg": 1.0,
+          "installed_modifications": [],
+          "message": "Weapon profile calculated.",
+          "situational_effects": [],
+          "steps": [],
+          "valid": true
+        },
+        "weight_kg": 1.0
       },
       {
         "category": "ranged_weapon",
@@ -253,10 +461,59 @@
         "id": "lascarbine",
         "instance_id": "a2caee74-6922-409c-a40b-12bc01f9c2e9",
         "location": "carried",
+        "modification_ids": [],
         "name": "Las carbine",
         "note": "",
         "origin": "standard_issue",
-        "quantity": 1.0
+        "profile": {
+          "class": "Basic",
+          "damage": "1d10+3 E",
+          "magazine": 60.0,
+          "penetration": 0.0,
+          "qualities": [
+            "Reliable"
+          ],
+          "range_m": 75.0,
+          "rate_of_fire": "S/2/-",
+          "reload": "Half"
+        },
+        "quantity": 1.0,
+        "weapon": {
+          "base_profile": {
+            "class": "Basic",
+            "damage": "1d10+3 E",
+            "magazine": 60.0,
+            "penetration": 0.0,
+            "qualities": [
+              "Reliable"
+            ],
+            "range_m": 75.0,
+            "rate_of_fire": "S/2/-",
+            "reload": "Half"
+          },
+          "base_weight_kg": 2.5,
+          "canonical_definition_id": "lascarbine",
+          "code": "ok",
+          "final_profile": {
+            "class": "Basic",
+            "damage": "1d10+3 E",
+            "magazine": 60.0,
+            "penetration": 0.0,
+            "qualities": [
+              "Reliable"
+            ],
+            "range_m": 75.0,
+            "rate_of_fire": "S/2/-",
+            "reload": "Half"
+          },
+          "final_weight_kg": 2.5,
+          "installed_modifications": [],
+          "message": "Weapon profile calculated.",
+          "situational_effects": [],
+          "steps": [],
+          "valid": true
+        },
+        "weight_kg": 2.5
       },
       {
         "category": "wargear",
@@ -269,10 +526,12 @@
         "id": "mess_kit",
         "instance_id": "8e316085-225c-4234-a3e5-1e5d82739b99",
         "location": "carried",
+        "modification_ids": [],
         "name": "Mess kit and water canteen",
         "note": "",
         "origin": "standard_issue",
-        "quantity": 1.0
+        "quantity": 1.0,
+        "weight_kg": 0.0
       },
       {
         "category": "wargear",
@@ -285,10 +544,12 @@
         "id": "poor_weather_gear",
         "instance_id": "1ad5280b-cae7-46d8-8a08-af817a39b14e",
         "location": "carried",
+        "modification_ids": [],
         "name": "Poor weather gear",
         "note": "",
         "origin": "standard_issue",
-        "quantity": 1.0
+        "quantity": 1.0,
+        "weight_kg": 0.0
       },
       {
         "category": "wargear",
@@ -301,10 +562,12 @@
         "id": "rucksack",
         "instance_id": "0d0b9b91-9a86-49aa-af20-3474292af5c4",
         "location": "carried",
+        "modification_ids": [],
         "name": "Rucksack or sling bag",
         "note": "",
         "origin": "standard_issue",
-        "quantity": 1.0
+        "quantity": 1.0,
+        "weight_kg": 0.0
       },
       {
         "category": "grenade_missile",
@@ -317,10 +580,12 @@
         "id": "smoke_grenade",
         "instance_id": "6003aea8-1527-44ff-a51b-765a2c2e7573",
         "location": "carried",
+        "modification_ids": [],
         "name": "Smoke grenade",
         "note": "",
         "origin": "standard_issue",
-        "quantity": 2.0
+        "quantity": 2.0,
+        "weight_kg": 0.5
       },
       {
         "category": "wargear",
@@ -333,10 +598,12 @@
         "id": "uniform",
         "instance_id": "5fcc43b1-41c1-41a9-849b-ebb30f27e533",
         "location": "carried",
+        "modification_ids": [],
         "name": "Uniform",
         "note": "",
         "origin": "standard_issue",
-        "quantity": 1.0
+        "quantity": 1.0,
+        "weight_kg": 0.0
       },
       {
         "category": "wargear",
@@ -349,44 +616,46 @@
         "id": "primer",
         "instance_id": "ba2b2b1c-b793-4bcd-9dae-9c781772a226",
         "location": "carried",
+        "modification_ids": [],
         "name": "Uplifting Primer or instructional handbook",
         "note": "",
         "origin": "standard_issue",
-        "quantity": 1.0
+        "quantity": 1.0,
+        "weight_kg": 0.0
       }
     ],
     "errors": [],
-    "fate_points": 1.0,
+    "fate_points": 1,
     "inventory": {
       "armour_by_location": {
         "Arms": {
-          "ap": 0.0,
+          "ap": 0,
           "sources": []
         },
         "Body": {
-          "ap": 3.0,
+          "ap": 3,
           "sources": [
             "143830f8-8560-4292-bf89-a2f5566cb9c8"
           ]
         },
         "Head": {
-          "ap": 2.0,
+          "ap": 2,
           "sources": [
             "008cd99c-b687-4a89-b5f7-5a2424a3ca40"
           ]
         },
         "Legs": {
-          "ap": 0.0,
+          "ap": 0,
           "sources": []
         }
       },
       "encumbrance": {
-        "bonus_sum": 5.0,
+        "bonus_sum": 5,
         "carrying_limit_kg": 27.0,
-        "complete": false,
-        "known_weight_kg": 19.0,
+        "complete": true,
+        "known_weight_kg": 19.5,
         "lifting_limit_kg": 54.0,
-        "status": "partial"
+        "status": "within_limit"
       },
       "items": [
         {
@@ -400,10 +669,12 @@
           "id": "basic_tools",
           "instance_id": "b9e1babe-ac9a-4cc9-a217-41aba07bdc7f",
           "location": "carried",
+          "modification_ids": [],
           "name": "Basic tools",
           "note": "",
           "origin": "standard_issue",
-          "quantity": 1.0
+          "quantity": 1.0,
+          "weight_kg": 0.0
         },
         {
           "category": "wargear",
@@ -416,10 +687,12 @@
           "id": "blanket",
           "instance_id": "2c0566a6-e1c6-457b-8ec5-ab2933e122d7",
           "location": "carried",
+          "modification_ids": [],
           "name": "Blanket and sleep bag",
           "note": "",
           "origin": "standard_issue",
-          "quantity": 1.0
+          "quantity": 1.0,
+          "weight_kg": 0.0
         },
         {
           "category": "ammunition",
@@ -432,10 +705,12 @@
           "id": "charge_pack",
           "instance_id": "47e51608-71ec-42c4-8437-e3ee6f3f62d4",
           "location": "carried",
+          "modification_ids": [],
           "name": "Charge pack",
           "note": "",
           "origin": "standard_issue",
-          "quantity": 4.0
+          "quantity": 4.0,
+          "weight_kg": 0.0
         },
         {
           "category": "wargear",
@@ -448,10 +723,12 @@
           "id": "cognomen_tags",
           "instance_id": "22beeff6-c973-440c-b05a-020dd9e3decf",
           "location": "carried",
+          "modification_ids": [],
           "name": "Cognomen tags or equivalent ID",
           "note": "",
           "origin": "standard_issue",
-          "quantity": 1.0
+          "quantity": 1.0,
+          "weight_kg": 0.0
         },
         {
           "category": "wargear",
@@ -464,10 +741,12 @@
           "id": "rations",
           "instance_id": "5cefec35-4554-4568-88a7-3d505376e3f5",
           "location": "carried",
+          "modification_ids": [],
           "name": "Combat sustenance rations (weeks)",
           "note": "",
           "origin": "standard_issue",
-          "quantity": 2.0
+          "quantity": 2.0,
+          "weight_kg": 0.0
         },
         {
           "category": "armour",
@@ -480,10 +759,12 @@
           "id": "flak_helmet",
           "instance_id": "008cd99c-b687-4a89-b5f7-5a2424a3ca40",
           "location": "equipped",
+          "modification_ids": [],
           "name": "Flak helmet",
           "note": "",
           "origin": "standard_issue",
-          "quantity": 1.0
+          "quantity": 1.0,
+          "weight_kg": 2.0
         },
         {
           "category": "armour",
@@ -496,10 +777,12 @@
           "id": "flak_vest",
           "instance_id": "143830f8-8560-4292-bf89-a2f5566cb9c8",
           "location": "equipped",
+          "modification_ids": [],
           "name": "Flak vest",
           "note": "",
           "origin": "standard_issue",
-          "quantity": 1.0
+          "quantity": 1.0,
+          "weight_kg": 5.0
         },
         {
           "category": "grenade_missile",
@@ -512,10 +795,12 @@
           "id": "frag_grenade",
           "instance_id": "4b00fbb4-5a97-498d-9581-46c3c2897ee9",
           "location": "carried",
+          "modification_ids": [],
           "name": "Frag grenade",
           "note": "",
           "origin": "standard_issue",
-          "quantity": 2.0
+          "quantity": 2.0,
+          "weight_kg": 0.5
         },
         {
           "category": "grenade_missile",
@@ -528,10 +813,12 @@
           "id": "frag_grenade",
           "instance_id": "813e2ec6-8429-4ba0-b460-8caf770a5430",
           "location": "carried",
+          "modification_ids": [],
           "name": "Frag grenade",
           "note": "",
           "origin": "speciality_issue",
-          "quantity": 4.0
+          "quantity": 4.0,
+          "weight_kg": 0.5
         },
         {
           "category": "wargear",
@@ -544,10 +831,12 @@
           "id": "lamp_pack",
           "instance_id": "57ccd215-f3b6-419b-a121-833b2bcd5fe5",
           "location": "carried",
+          "modification_ids": [],
           "name": "Glow-globe / lamp pack",
           "note": "",
           "origin": "standard_issue",
-          "quantity": 1.0
+          "quantity": 1.0,
+          "weight_kg": 0.5
         },
         {
           "category": "ranged_weapon",
@@ -560,10 +849,162 @@
           "id": "lasgun_good",
           "instance_id": "326caf8b-4f87-4ddf-9d0c-b684ae8b0b62",
           "location": "carried",
+          "modification_ids": [
+            "red_dot_laser_sight"
+          ],
           "name": "Good Craftsmanship M36 lasgun",
           "note": "",
           "origin": "speciality_issue",
-          "quantity": 1.0
+          "profile": {
+            "class": "Basic",
+            "damage": "1d10+3 E",
+            "magazine": 60.0,
+            "penetration": 0.0,
+            "qualities": [
+              "Reliable"
+            ],
+            "range_m": 100.0,
+            "rate_of_fire": "S/3/-",
+            "reload": "Full"
+          },
+          "quantity": 1.0,
+          "weapon": {
+            "base_profile": {
+              "class": "Basic",
+              "damage": "1d10+3 E",
+              "magazine": 60.0,
+              "penetration": 0.0,
+              "qualities": [
+                "Reliable"
+              ],
+              "range_m": 100.0,
+              "rate_of_fire": "S/3/-",
+              "reload": "Full"
+            },
+            "base_weight_kg": 4.0,
+            "canonical_definition_id": "m36_lasgun",
+            "code": "ok",
+            "final_profile": {
+              "class": "Basic",
+              "damage": "1d10+3 E",
+              "magazine": 60.0,
+              "penetration": 0.0,
+              "qualities": [
+                "Reliable"
+              ],
+              "range_m": 100.0,
+              "rate_of_fire": "S/3/-",
+              "reload": "Full"
+            },
+            "final_weight_kg": 4.5,
+            "installed_modifications": [
+              {
+                "availability": "Scarce",
+                "category": "weapon_upgrade",
+                "id": "red_dot_laser_sight",
+                "modification": {
+                  "compatibility": {
+                    "any_of": [
+                      {
+                        "classes": [
+                          "Pistol"
+                        ]
+                      },
+                      {
+                        "classes": [
+                          "Basic"
+                        ],
+                        "families": [
+                          "las",
+                          "solid_projectile",
+                          "bolt",
+                          "low_tech",
+                          "plasma"
+                        ]
+                      }
+                    ]
+                  },
+                  "effects": [
+                    {
+                      "operation": "numeric_add",
+                      "target": "weight_kg",
+                      "value": 0.5
+                    },
+                    {
+                      "code": "single_shot_ballistic_skill",
+                      "operation": "situational",
+                      "summary": "+10 to Ballistic Skill Tests when firing a single shot.",
+                      "value": 10.0
+                    }
+                  ],
+                  "exclusive_group": "sight",
+                  "order": 300.0
+                },
+                "name": "Red-dot laser sight",
+                "source": {
+                  "book": "ow_core",
+                  "page": 189.0
+                },
+                "summary": "A sighting aid for eligible ranged weapons.",
+                "weight_kg": 0.5
+              }
+            ],
+            "message": "Weapon profile calculated.",
+            "situational_effects": [
+              {
+                "code": "single_shot_ballistic_skill",
+                "label": "Red-dot laser sight",
+                "operation": "situational",
+                "source_id": "red_dot_laser_sight",
+                "source_type": "modification",
+                "summary": "+10 to Ballistic Skill Tests when firing a single shot.",
+                "value": 10.0
+              }
+            ],
+            "steps": [
+              {
+                "after": [
+                  "Reliable"
+                ],
+                "before": [
+                  "Reliable"
+                ],
+                "label": "Good Craftsmanship",
+                "source_id": "Good",
+                "source_type": "craftsmanship",
+                "summary": "Adds Reliable.",
+                "target": "profile.qualities"
+              },
+              {
+                "after": 4.5,
+                "before": 4.0,
+                "label": "Red-dot laser sight",
+                "source_id": "red_dot_laser_sight",
+                "source_type": "modification",
+                "summary": "weight_kg changes from 4.0 to 4.5.",
+                "target": "weight_kg"
+              },
+              {
+                "after": {
+                  "code": "single_shot_ballistic_skill",
+                  "label": "Red-dot laser sight",
+                  "operation": "situational",
+                  "source_id": "red_dot_laser_sight",
+                  "source_type": "modification",
+                  "summary": "+10 to Ballistic Skill Tests when firing a single shot.",
+                  "value": 10.0
+                },
+                "before": null,
+                "label": "Red-dot laser sight",
+                "source_id": "red_dot_laser_sight",
+                "source_type": "modification",
+                "summary": "+10 to Ballistic Skill Tests when firing a single shot.",
+                "target": "situational.single_shot_ballistic_skill"
+              }
+            ],
+            "valid": true
+          },
+          "weight_kg": 4.5
         },
         {
           "category": "wargear",
@@ -576,10 +1017,12 @@
           "id": "grooming_kit",
           "instance_id": "982ccb09-ac15-45b8-af7f-e6f529957784",
           "location": "carried",
+          "modification_ids": [],
           "name": "Grooming kit",
           "note": "",
           "origin": "standard_issue",
-          "quantity": 1.0
+          "quantity": 1.0,
+          "weight_kg": 0.0
         },
         {
           "category": "melee_weapon",
@@ -592,10 +1035,44 @@
           "id": "knife",
           "instance_id": "1e0f025c-faa4-429d-9e0d-8085bf3ed3a2",
           "location": "carried",
+          "modification_ids": [],
           "name": "Knife",
           "note": "",
           "origin": "standard_issue",
-          "quantity": 1.0
+          "profile": {
+            "class": "Melee/Thrown",
+            "damage": "1d5 R",
+            "penetration": 0.0,
+            "qualities": [],
+            "range_m": 5.0
+          },
+          "quantity": 1.0,
+          "weapon": {
+            "base_profile": {
+              "class": "Melee/Thrown",
+              "damage": "1d5 R",
+              "penetration": 0.0,
+              "qualities": [],
+              "range_m": 5.0
+            },
+            "base_weight_kg": 1.0,
+            "canonical_definition_id": "knife",
+            "code": "ok",
+            "final_profile": {
+              "class": "Melee/Thrown",
+              "damage": "1d5 R",
+              "penetration": 0.0,
+              "qualities": [],
+              "range_m": 5.0
+            },
+            "final_weight_kg": 1.0,
+            "installed_modifications": [],
+            "message": "Weapon profile calculated.",
+            "situational_effects": [],
+            "steps": [],
+            "valid": true
+          },
+          "weight_kg": 1.0
         },
         {
           "category": "ranged_weapon",
@@ -608,10 +1085,59 @@
           "id": "lascarbine",
           "instance_id": "a2caee74-6922-409c-a40b-12bc01f9c2e9",
           "location": "carried",
+          "modification_ids": [],
           "name": "Las carbine",
           "note": "",
           "origin": "standard_issue",
-          "quantity": 1.0
+          "profile": {
+            "class": "Basic",
+            "damage": "1d10+3 E",
+            "magazine": 60.0,
+            "penetration": 0.0,
+            "qualities": [
+              "Reliable"
+            ],
+            "range_m": 75.0,
+            "rate_of_fire": "S/2/-",
+            "reload": "Half"
+          },
+          "quantity": 1.0,
+          "weapon": {
+            "base_profile": {
+              "class": "Basic",
+              "damage": "1d10+3 E",
+              "magazine": 60.0,
+              "penetration": 0.0,
+              "qualities": [
+                "Reliable"
+              ],
+              "range_m": 75.0,
+              "rate_of_fire": "S/2/-",
+              "reload": "Half"
+            },
+            "base_weight_kg": 2.5,
+            "canonical_definition_id": "lascarbine",
+            "code": "ok",
+            "final_profile": {
+              "class": "Basic",
+              "damage": "1d10+3 E",
+              "magazine": 60.0,
+              "penetration": 0.0,
+              "qualities": [
+                "Reliable"
+              ],
+              "range_m": 75.0,
+              "rate_of_fire": "S/2/-",
+              "reload": "Half"
+            },
+            "final_weight_kg": 2.5,
+            "installed_modifications": [],
+            "message": "Weapon profile calculated.",
+            "situational_effects": [],
+            "steps": [],
+            "valid": true
+          },
+          "weight_kg": 2.5
         },
         {
           "category": "wargear",
@@ -624,10 +1150,12 @@
           "id": "mess_kit",
           "instance_id": "8e316085-225c-4234-a3e5-1e5d82739b99",
           "location": "carried",
+          "modification_ids": [],
           "name": "Mess kit and water canteen",
           "note": "",
           "origin": "standard_issue",
-          "quantity": 1.0
+          "quantity": 1.0,
+          "weight_kg": 0.0
         },
         {
           "category": "wargear",
@@ -640,10 +1168,12 @@
           "id": "poor_weather_gear",
           "instance_id": "1ad5280b-cae7-46d8-8a08-af817a39b14e",
           "location": "carried",
+          "modification_ids": [],
           "name": "Poor weather gear",
           "note": "",
           "origin": "standard_issue",
-          "quantity": 1.0
+          "quantity": 1.0,
+          "weight_kg": 0.0
         },
         {
           "category": "wargear",
@@ -656,10 +1186,12 @@
           "id": "rucksack",
           "instance_id": "0d0b9b91-9a86-49aa-af20-3474292af5c4",
           "location": "carried",
+          "modification_ids": [],
           "name": "Rucksack or sling bag",
           "note": "",
           "origin": "standard_issue",
-          "quantity": 1.0
+          "quantity": 1.0,
+          "weight_kg": 0.0
         },
         {
           "category": "grenade_missile",
@@ -672,10 +1204,12 @@
           "id": "smoke_grenade",
           "instance_id": "6003aea8-1527-44ff-a51b-765a2c2e7573",
           "location": "carried",
+          "modification_ids": [],
           "name": "Smoke grenade",
           "note": "",
           "origin": "standard_issue",
-          "quantity": 2.0
+          "quantity": 2.0,
+          "weight_kg": 0.5
         },
         {
           "category": "wargear",
@@ -688,10 +1222,12 @@
           "id": "uniform",
           "instance_id": "5fcc43b1-41c1-41a9-849b-ebb30f27e533",
           "location": "carried",
+          "modification_ids": [],
           "name": "Uniform",
           "note": "",
           "origin": "standard_issue",
-          "quantity": 1.0
+          "quantity": 1.0,
+          "weight_kg": 0.0
         },
         {
           "category": "wargear",
@@ -704,201 +1240,24 @@
           "id": "primer",
           "instance_id": "ba2b2b1c-b793-4bcd-9dae-9c781772a226",
           "location": "carried",
+          "modification_ids": [],
           "name": "Uplifting Primer or instructional handbook",
           "note": "",
           "origin": "standard_issue",
-          "quantity": 1.0
+          "quantity": 1.0,
+          "weight_kg": 0.0
         }
       ],
-      "unknown_weight_items": [
-        {
-          "category": "wargear",
-          "craftsmanship": "Common",
-          "custodian": {
-            "id": "",
-            "type": "character"
-          },
-          "definition_id": "basic_tools",
-          "id": "basic_tools",
-          "instance_id": "b9e1babe-ac9a-4cc9-a217-41aba07bdc7f",
-          "location": "carried",
-          "name": "Basic tools",
-          "note": "",
-          "origin": "standard_issue",
-          "quantity": 1.0
-        },
-        {
-          "category": "wargear",
-          "craftsmanship": "Common",
-          "custodian": {
-            "id": "",
-            "type": "character"
-          },
-          "definition_id": "blanket",
-          "id": "blanket",
-          "instance_id": "2c0566a6-e1c6-457b-8ec5-ab2933e122d7",
-          "location": "carried",
-          "name": "Blanket and sleep bag",
-          "note": "",
-          "origin": "standard_issue",
-          "quantity": 1.0
-        },
-        {
-          "category": "ammunition",
-          "craftsmanship": "Common",
-          "custodian": {
-            "id": "",
-            "type": "character"
-          },
-          "definition_id": "charge_pack",
-          "id": "charge_pack",
-          "instance_id": "47e51608-71ec-42c4-8437-e3ee6f3f62d4",
-          "location": "carried",
-          "name": "Charge pack",
-          "note": "",
-          "origin": "standard_issue",
-          "quantity": 4.0
-        },
-        {
-          "category": "wargear",
-          "craftsmanship": "Common",
-          "custodian": {
-            "id": "",
-            "type": "character"
-          },
-          "definition_id": "cognomen_tags",
-          "id": "cognomen_tags",
-          "instance_id": "22beeff6-c973-440c-b05a-020dd9e3decf",
-          "location": "carried",
-          "name": "Cognomen tags or equivalent ID",
-          "note": "",
-          "origin": "standard_issue",
-          "quantity": 1.0
-        },
-        {
-          "category": "wargear",
-          "craftsmanship": "Common",
-          "custodian": {
-            "id": "",
-            "type": "character"
-          },
-          "definition_id": "rations",
-          "id": "rations",
-          "instance_id": "5cefec35-4554-4568-88a7-3d505376e3f5",
-          "location": "carried",
-          "name": "Combat sustenance rations (weeks)",
-          "note": "",
-          "origin": "standard_issue",
-          "quantity": 2.0
-        },
-        {
-          "category": "wargear",
-          "craftsmanship": "Common",
-          "custodian": {
-            "id": "",
-            "type": "character"
-          },
-          "definition_id": "grooming_kit",
-          "id": "grooming_kit",
-          "instance_id": "982ccb09-ac15-45b8-af7f-e6f529957784",
-          "location": "carried",
-          "name": "Grooming kit",
-          "note": "",
-          "origin": "standard_issue",
-          "quantity": 1.0
-        },
-        {
-          "category": "wargear",
-          "craftsmanship": "Common",
-          "custodian": {
-            "id": "",
-            "type": "character"
-          },
-          "definition_id": "mess_kit",
-          "id": "mess_kit",
-          "instance_id": "8e316085-225c-4234-a3e5-1e5d82739b99",
-          "location": "carried",
-          "name": "Mess kit and water canteen",
-          "note": "",
-          "origin": "standard_issue",
-          "quantity": 1.0
-        },
-        {
-          "category": "wargear",
-          "craftsmanship": "Common",
-          "custodian": {
-            "id": "",
-            "type": "character"
-          },
-          "definition_id": "poor_weather_gear",
-          "id": "poor_weather_gear",
-          "instance_id": "1ad5280b-cae7-46d8-8a08-af817a39b14e",
-          "location": "carried",
-          "name": "Poor weather gear",
-          "note": "",
-          "origin": "standard_issue",
-          "quantity": 1.0
-        },
-        {
-          "category": "wargear",
-          "craftsmanship": "Common",
-          "custodian": {
-            "id": "",
-            "type": "character"
-          },
-          "definition_id": "rucksack",
-          "id": "rucksack",
-          "instance_id": "0d0b9b91-9a86-49aa-af20-3474292af5c4",
-          "location": "carried",
-          "name": "Rucksack or sling bag",
-          "note": "",
-          "origin": "standard_issue",
-          "quantity": 1.0
-        },
-        {
-          "category": "wargear",
-          "craftsmanship": "Common",
-          "custodian": {
-            "id": "",
-            "type": "character"
-          },
-          "definition_id": "uniform",
-          "id": "uniform",
-          "instance_id": "5fcc43b1-41c1-41a9-849b-ebb30f27e533",
-          "location": "carried",
-          "name": "Uniform",
-          "note": "",
-          "origin": "standard_issue",
-          "quantity": 1.0
-        },
-        {
-          "category": "wargear",
-          "craftsmanship": "Common",
-          "custodian": {
-            "id": "",
-            "type": "character"
-          },
-          "definition_id": "primer",
-          "id": "primer",
-          "instance_id": "ba2b2b1c-b793-4bcd-9dae-9c781772a226",
-          "location": "carried",
-          "name": "Uplifting Primer or instructional handbook",
-          "note": "",
-          "origin": "standard_issue",
-          "quantity": 1.0
-        }
-      ],
+      "unknown_weight_items": [],
       "unresolved_items": [],
       "valid": true,
-      "warnings": [
-        "Carried weight is partial because one or more items have no verified weight."
-      ]
+      "warnings": []
     },
     "movement": {
-      "charge": 9.0,
-      "full": 6.0,
-      "half": 3.0,
-      "run": 18.0
+      "charge": 9,
+      "full": 6,
+      "half": 3,
+      "run": 18
     },
     "regiment_name": "13th Varanox Light Infantry",
     "resolved_choices": [
@@ -987,52 +1346,52 @@
     ],
     "skills": [
       {
-        "grants": 1.0,
+        "grants": 1,
         "id": "common_lore_imperial_guard",
         "name": "Common Lore (Imperial Guard)",
-        "rank": 1.0,
+        "rank": 1,
         "rank_label": "Known"
       },
       {
-        "grants": 1.0,
+        "grants": 1,
         "id": "common_lore_imperium",
         "name": "Common Lore (Imperium)",
-        "rank": 1.0,
+        "rank": 1,
         "rank_label": "Known"
       },
       {
-        "grants": 1.0,
+        "grants": 1,
         "id": "common_lore_war",
         "name": "Common Lore (War)",
-        "rank": 1.0,
+        "rank": 1,
         "rank_label": "Known"
       },
       {
-        "grants": 1.0,
+        "grants": 1,
         "id": "deceive",
         "name": "Deceive",
-        "rank": 1.0,
+        "rank": 1,
         "rank_label": "Known"
       },
       {
-        "grants": 1.0,
+        "grants": 1,
         "id": "linguistics_low_gothic",
         "name": "Linguistics (Low Gothic)",
-        "rank": 1.0,
+        "rank": 1,
         "rank_label": "Known"
       },
       {
-        "grants": 2.0,
+        "grants": 2,
         "id": "navigate_surface",
         "name": "Navigate (Surface)",
-        "rank": 2.0,
+        "rank": 2,
         "rank_label": "Trained (+10)"
       },
       {
-        "grants": 1.0,
+        "grants": 1,
         "id": "survival",
         "name": "Survival",
-        "rank": 1.0,
+        "rank": 1,
         "rank_label": "Known"
       }
     ],
@@ -1108,289 +1467,308 @@
     "speciality_id": "weapon_specialist",
     "starting_equipment": [
       {
+        "craftsmanship": "Common",
         "id": "basic_tools",
         "name": "Basic tools",
         "origin_quantities": {
-          "standard_issue": 1.0
+          "standard_issue": 1
         },
         "origins": [
           "standard_issue"
         ],
-        "quantity": 1.0,
+        "quantity": 1,
         "scope": "per_character"
       },
       {
+        "craftsmanship": "Common",
         "id": "blanket",
         "name": "Blanket and sleep bag",
         "origin_quantities": {
-          "standard_issue": 1.0
+          "standard_issue": 1
         },
         "origins": [
           "standard_issue"
         ],
-        "quantity": 1.0,
+        "quantity": 1,
         "scope": "per_character"
       },
       {
+        "craftsmanship": "Common",
         "id": "charge_pack",
         "name": "Charge pack",
         "origin_quantities": {
-          "standard_issue": 4.0
+          "standard_issue": 4
         },
         "origins": [
           "standard_issue"
         ],
-        "quantity": 4.0,
+        "quantity": 4,
         "scope": "per_character"
       },
       {
+        "craftsmanship": "Common",
         "id": "cognomen_tags",
         "name": "Cognomen tags or equivalent ID",
         "origin_quantities": {
-          "standard_issue": 1.0
+          "standard_issue": 1
         },
         "origins": [
           "standard_issue"
         ],
-        "quantity": 1.0,
+        "quantity": 1,
         "scope": "per_character"
       },
       {
+        "craftsmanship": "Common",
         "id": "rations",
         "name": "Combat sustenance rations (weeks)",
         "origin_quantities": {
-          "standard_issue": 2.0
+          "standard_issue": 2
         },
         "origins": [
           "standard_issue"
         ],
-        "quantity": 2.0,
+        "quantity": 2,
         "scope": "per_character"
       },
       {
+        "craftsmanship": "Common",
         "id": "flak_helmet",
         "name": "Flak helmet",
         "origin_quantities": {
-          "standard_issue": 1.0
+          "standard_issue": 1
         },
         "origins": [
           "standard_issue"
         ],
-        "quantity": 1.0,
+        "quantity": 1,
         "scope": "per_character"
       },
       {
+        "craftsmanship": "Common",
         "id": "flak_vest",
         "name": "Flak vest",
         "origin_quantities": {
-          "standard_issue": 1.0
+          "standard_issue": 1
         },
         "origins": [
           "standard_issue"
         ],
-        "quantity": 1.0,
+        "quantity": 1,
         "scope": "per_character"
       },
       {
+        "craftsmanship": "Common",
         "id": "frag_grenade",
         "name": "Frag grenade",
         "origin_quantities": {
-          "speciality_issue": 4.0,
-          "standard_issue": 2.0
+          "speciality_issue": 4,
+          "standard_issue": 2
         },
         "origins": [
           "standard_issue",
           "speciality_issue"
         ],
-        "quantity": 6.0,
+        "quantity": 6,
         "scope": "per_character"
       },
       {
+        "craftsmanship": "Common",
         "id": "lamp_pack",
         "name": "Glow-globe / lamp pack",
         "origin_quantities": {
-          "standard_issue": 1.0
+          "standard_issue": 1
         },
         "origins": [
           "standard_issue"
         ],
-        "quantity": 1.0,
+        "quantity": 1,
         "scope": "per_character"
       },
       {
-        "id": "lasgun_good",
-        "name": "Good Craftsmanship M36 lasgun",
+        "craftsmanship": "Common",
+        "id": "grooming_kit",
+        "name": "Grooming kit",
         "origin_quantities": {
-          "speciality_issue": 1.0
+          "standard_issue": 1
+        },
+        "origins": [
+          "standard_issue"
+        ],
+        "quantity": 1,
+        "scope": "per_character"
+      },
+      {
+        "craftsmanship": "Common",
+        "id": "knife",
+        "name": "Knife",
+        "origin_quantities": {
+          "standard_issue": 1
+        },
+        "origins": [
+          "standard_issue"
+        ],
+        "quantity": 1,
+        "scope": "per_character"
+      },
+      {
+        "craftsmanship": "Common",
+        "id": "lascarbine",
+        "name": "Las carbine",
+        "origin_quantities": {
+          "standard_issue": 1
+        },
+        "origins": [
+          "standard_issue"
+        ],
+        "quantity": 1,
+        "scope": "per_character"
+      },
+      {
+        "craftsmanship": "Good",
+        "id": "m36_lasgun",
+        "name": "M36 lasgun",
+        "origin_quantities": {
+          "speciality_issue": 1
         },
         "origins": [
           "speciality_issue"
         ],
-        "quantity": 1.0,
+        "quantity": 1,
         "scope": "per_character"
       },
       {
-        "id": "grooming_kit",
-        "name": "Grooming kit",
-        "origin_quantities": {
-          "standard_issue": 1.0
-        },
-        "origins": [
-          "standard_issue"
-        ],
-        "quantity": 1.0,
-        "scope": "per_character"
-      },
-      {
-        "id": "knife",
-        "name": "Knife",
-        "origin_quantities": {
-          "standard_issue": 1.0
-        },
-        "origins": [
-          "standard_issue"
-        ],
-        "quantity": 1.0,
-        "scope": "per_character"
-      },
-      {
-        "id": "lascarbine",
-        "name": "Las carbine",
-        "origin_quantities": {
-          "standard_issue": 1.0
-        },
-        "origins": [
-          "standard_issue"
-        ],
-        "quantity": 1.0,
-        "scope": "per_character"
-      },
-      {
+        "craftsmanship": "Common",
         "id": "mess_kit",
         "name": "Mess kit and water canteen",
         "origin_quantities": {
-          "standard_issue": 1.0
+          "standard_issue": 1
         },
         "origins": [
           "standard_issue"
         ],
-        "quantity": 1.0,
+        "quantity": 1,
         "scope": "per_character"
       },
       {
+        "craftsmanship": "Common",
         "id": "poor_weather_gear",
         "name": "Poor weather gear",
         "origin_quantities": {
-          "standard_issue": 1.0
+          "standard_issue": 1
         },
         "origins": [
           "standard_issue"
         ],
-        "quantity": 1.0,
+        "quantity": 1,
         "scope": "per_character"
       },
       {
+        "craftsmanship": "Common",
         "id": "rucksack",
         "name": "Rucksack or sling bag",
         "origin_quantities": {
-          "standard_issue": 1.0
+          "standard_issue": 1
         },
         "origins": [
           "standard_issue"
         ],
-        "quantity": 1.0,
+        "quantity": 1,
         "scope": "per_character"
       },
       {
+        "craftsmanship": "Common",
         "id": "smoke_grenade",
         "name": "Smoke grenade",
         "origin_quantities": {
-          "standard_issue": 2.0
+          "standard_issue": 2
         },
         "origins": [
           "standard_issue"
         ],
-        "quantity": 2.0,
+        "quantity": 2,
         "scope": "per_character"
       },
       {
+        "craftsmanship": "Common",
         "id": "uniform",
         "name": "Uniform",
         "origin_quantities": {
-          "standard_issue": 1.0
+          "standard_issue": 1
         },
         "origins": [
           "standard_issue"
         ],
-        "quantity": 1.0,
+        "quantity": 1,
         "scope": "per_character"
       },
       {
+        "craftsmanship": "Common",
         "id": "primer",
         "name": "Uplifting Primer or instructional handbook",
         "origin_quantities": {
-          "standard_issue": 1.0
+          "standard_issue": 1
         },
         "origins": [
           "standard_issue"
         ],
-        "quantity": 1.0,
+        "quantity": 1,
         "scope": "per_character"
       }
     ],
     "talents": [
       {
-        "count": 1.0,
-        "grants": 1.0,
+        "count": 1,
+        "grants": 1,
         "id": "double_team",
         "name": "Double Team",
         "stackable": false
       },
       {
-        "count": 1.0,
-        "grants": 1.0,
+        "count": 1,
+        "grants": 1,
         "id": "heightened_senses_hearing",
         "name": "Heightened Senses (Hearing)",
         "stackable": false
       },
       {
-        "count": 1.0,
-        "grants": 1.0,
+        "count": 1,
+        "grants": 1,
         "id": "rapid_reaction",
         "name": "Rapid Reaction",
         "stackable": false
       },
       {
-        "count": 1.0,
-        "grants": 1.0,
+        "count": 1,
+        "grants": 1,
         "id": "rapid_reload",
         "name": "Rapid Reload",
         "stackable": false
       },
       {
-        "count": 1.0,
-        "grants": 1.0,
+        "count": 1,
+        "grants": 1,
         "id": "sprint",
         "name": "Sprint",
         "stackable": false
       },
       {
-        "count": 1.0,
-        "grants": 1.0,
+        "count": 1,
+        "grants": 1,
         "id": "weapon_training_las",
         "name": "Weapon Training (Las)",
         "stackable": false
       },
       {
-        "count": 1.0,
-        "grants": 1.0,
+        "count": 1,
+        "grants": 1,
         "id": "weapon_training_launcher",
         "name": "Weapon Training (Launcher)",
         "stackable": false
       },
       {
-        "count": 1.0,
-        "grants": 1.0,
+        "count": 1,
+        "grants": 1,
         "id": "weapon_training_low_tech",
         "name": "Weapon Training (Low-Tech)",
         "stackable": false
@@ -1398,30 +1776,28 @@
     ],
     "unresolved_choices": [],
     "valid": true,
-    "warnings": [
-      "Carried weight is partial because one or more items have no verified weight."
-    ],
-    "wounds": 9.0,
-    "wounds_modifier": -1.0,
-    "xp_budget": 600.0,
-    "xp_remaining": 600.0,
-    "xp_spent": 0.0
+    "warnings": [],
+    "wounds": 9,
+    "wounds_modifier": -1,
+    "xp_budget": 600,
+    "xp_remaining": 600,
+    "xp_spent": 0
   },
   "character": {
     "base_characteristics": {
-      "Agility": 30.0,
-      "Ballistic Skill": 30.0,
-      "Fellowship": 30.0,
-      "Intelligence": 30.0,
-      "Perception": 30.0,
-      "Strength": 30.0,
-      "Toughness": 30.0,
-      "Weapon Skill": 30.0,
-      "Willpower": 30.0
+      "Agility": 30,
+      "Ballistic Skill": 30,
+      "Fellowship": 30,
+      "Intelligence": 30,
+      "Perception": 30,
+      "Strength": 30,
+      "Toughness": 30,
+      "Weapon Skill": 30,
+      "Willpower": 30
     },
     "comrade": {},
     "document_id": "22222222-2222-4222-8222-222222222222",
-    "fate_roll": 5.0,
+    "fate_roll": 5,
     "inventory_events": [
       {
         "definition_id": "basic_tools",
@@ -1436,6 +1812,7 @@
           "definition_id": "basic_tools",
           "instance_id": "b9e1babe-ac9a-4cc9-a217-41aba07bdc7f",
           "location": "carried",
+          "modification_ids": [],
           "note": "",
           "origin": "standard_issue",
           "quantity": 1.0
@@ -1458,6 +1835,7 @@
           "definition_id": "blanket",
           "instance_id": "2c0566a6-e1c6-457b-8ec5-ab2933e122d7",
           "location": "carried",
+          "modification_ids": [],
           "note": "",
           "origin": "standard_issue",
           "quantity": 1.0
@@ -1480,6 +1858,7 @@
           "definition_id": "charge_pack",
           "instance_id": "47e51608-71ec-42c4-8437-e3ee6f3f62d4",
           "location": "carried",
+          "modification_ids": [],
           "note": "",
           "origin": "standard_issue",
           "quantity": 4.0
@@ -1502,6 +1881,7 @@
           "definition_id": "cognomen_tags",
           "instance_id": "22beeff6-c973-440c-b05a-020dd9e3decf",
           "location": "carried",
+          "modification_ids": [],
           "note": "",
           "origin": "standard_issue",
           "quantity": 1.0
@@ -1524,6 +1904,7 @@
           "definition_id": "rations",
           "instance_id": "5cefec35-4554-4568-88a7-3d505376e3f5",
           "location": "carried",
+          "modification_ids": [],
           "note": "",
           "origin": "standard_issue",
           "quantity": 2.0
@@ -1546,6 +1927,7 @@
           "definition_id": "flak_helmet",
           "instance_id": "008cd99c-b687-4a89-b5f7-5a2424a3ca40",
           "location": "equipped",
+          "modification_ids": [],
           "note": "",
           "origin": "standard_issue",
           "quantity": 1.0
@@ -1568,6 +1950,7 @@
           "definition_id": "flak_vest",
           "instance_id": "143830f8-8560-4292-bf89-a2f5566cb9c8",
           "location": "equipped",
+          "modification_ids": [],
           "note": "",
           "origin": "standard_issue",
           "quantity": 1.0
@@ -1590,6 +1973,7 @@
           "definition_id": "frag_grenade",
           "instance_id": "4b00fbb4-5a97-498d-9581-46c3c2897ee9",
           "location": "carried",
+          "modification_ids": [],
           "note": "",
           "origin": "standard_issue",
           "quantity": 2.0
@@ -1612,6 +1996,7 @@
           "definition_id": "frag_grenade",
           "instance_id": "813e2ec6-8429-4ba0-b460-8caf770a5430",
           "location": "carried",
+          "modification_ids": [],
           "note": "",
           "origin": "speciality_issue",
           "quantity": 4.0
@@ -1634,6 +2019,7 @@
           "definition_id": "lamp_pack",
           "instance_id": "57ccd215-f3b6-419b-a121-833b2bcd5fe5",
           "location": "carried",
+          "modification_ids": [],
           "note": "",
           "origin": "standard_issue",
           "quantity": 1.0
@@ -1656,6 +2042,7 @@
           "definition_id": "lasgun_good",
           "instance_id": "326caf8b-4f87-4ddf-9d0c-b684ae8b0b62",
           "location": "carried",
+          "modification_ids": [],
           "note": "",
           "origin": "speciality_issue",
           "quantity": 1.0
@@ -1678,6 +2065,7 @@
           "definition_id": "grooming_kit",
           "instance_id": "982ccb09-ac15-45b8-af7f-e6f529957784",
           "location": "carried",
+          "modification_ids": [],
           "note": "",
           "origin": "standard_issue",
           "quantity": 1.0
@@ -1700,6 +2088,7 @@
           "definition_id": "knife",
           "instance_id": "1e0f025c-faa4-429d-9e0d-8085bf3ed3a2",
           "location": "carried",
+          "modification_ids": [],
           "note": "",
           "origin": "standard_issue",
           "quantity": 1.0
@@ -1722,6 +2111,7 @@
           "definition_id": "lascarbine",
           "instance_id": "a2caee74-6922-409c-a40b-12bc01f9c2e9",
           "location": "carried",
+          "modification_ids": [],
           "note": "",
           "origin": "standard_issue",
           "quantity": 1.0
@@ -1744,6 +2134,7 @@
           "definition_id": "mess_kit",
           "instance_id": "8e316085-225c-4234-a3e5-1e5d82739b99",
           "location": "carried",
+          "modification_ids": [],
           "note": "",
           "origin": "standard_issue",
           "quantity": 1.0
@@ -1766,6 +2157,7 @@
           "definition_id": "poor_weather_gear",
           "instance_id": "1ad5280b-cae7-46d8-8a08-af817a39b14e",
           "location": "carried",
+          "modification_ids": [],
           "note": "",
           "origin": "standard_issue",
           "quantity": 1.0
@@ -1788,6 +2180,7 @@
           "definition_id": "rucksack",
           "instance_id": "0d0b9b91-9a86-49aa-af20-3474292af5c4",
           "location": "carried",
+          "modification_ids": [],
           "note": "",
           "origin": "standard_issue",
           "quantity": 1.0
@@ -1810,6 +2203,7 @@
           "definition_id": "smoke_grenade",
           "instance_id": "6003aea8-1527-44ff-a51b-765a2c2e7573",
           "location": "carried",
+          "modification_ids": [],
           "note": "",
           "origin": "standard_issue",
           "quantity": 2.0
@@ -1832,6 +2226,7 @@
           "definition_id": "uniform",
           "instance_id": "5fcc43b1-41c1-41a9-849b-ebb30f27e533",
           "location": "carried",
+          "modification_ids": [],
           "note": "",
           "origin": "standard_issue",
           "quantity": 1.0
@@ -1854,6 +2249,7 @@
           "definition_id": "primer",
           "instance_id": "ba2b2b1c-b793-4bcd-9dae-9c781772a226",
           "location": "carried",
+          "modification_ids": [],
           "note": "",
           "origin": "standard_issue",
           "quantity": 1.0
@@ -1862,6 +2258,31 @@
         "reason": "Starting loadout",
         "timestamp_utc": "2026-08-09T12:00:00Z",
         "type": "issue"
+      },
+      {
+        "definition_id": "lasgun_good",
+        "event_id": "1651b3e8-7ea8-4d64-a781-32ecc5bcfa56",
+        "instance_id": "326caf8b-4f87-4ddf-9d0c-b684ae8b0b62",
+        "item_snapshot": {
+          "craftsmanship": "Good",
+          "custodian": {
+            "id": "",
+            "type": "character"
+          },
+          "definition_id": "lasgun_good",
+          "instance_id": "326caf8b-4f87-4ddf-9d0c-b684ae8b0b62",
+          "location": "carried",
+          "modification_ids": [
+            "red_dot_laser_sight"
+          ],
+          "note": "",
+          "origin": "speciality_issue",
+          "quantity": 1.0
+        },
+        "quantity": 1,
+        "reason": "Example v0.8.0 weapon modification",
+        "timestamp_utc": "2026-08-21T14:15:00Z",
+        "type": "modification"
       }
     ],
     "loadout_state": "finalized",
@@ -1877,6 +2298,7 @@
         "definition_id": "basic_tools",
         "instance_id": "b9e1babe-ac9a-4cc9-a217-41aba07bdc7f",
         "location": "carried",
+        "modification_ids": [],
         "note": "",
         "origin": "standard_issue",
         "quantity": 1.0
@@ -1890,6 +2312,7 @@
         "definition_id": "blanket",
         "instance_id": "2c0566a6-e1c6-457b-8ec5-ab2933e122d7",
         "location": "carried",
+        "modification_ids": [],
         "note": "",
         "origin": "standard_issue",
         "quantity": 1.0
@@ -1903,6 +2326,7 @@
         "definition_id": "charge_pack",
         "instance_id": "47e51608-71ec-42c4-8437-e3ee6f3f62d4",
         "location": "carried",
+        "modification_ids": [],
         "note": "",
         "origin": "standard_issue",
         "quantity": 4.0
@@ -1916,6 +2340,7 @@
         "definition_id": "cognomen_tags",
         "instance_id": "22beeff6-c973-440c-b05a-020dd9e3decf",
         "location": "carried",
+        "modification_ids": [],
         "note": "",
         "origin": "standard_issue",
         "quantity": 1.0
@@ -1929,6 +2354,7 @@
         "definition_id": "rations",
         "instance_id": "5cefec35-4554-4568-88a7-3d505376e3f5",
         "location": "carried",
+        "modification_ids": [],
         "note": "",
         "origin": "standard_issue",
         "quantity": 2.0
@@ -1942,6 +2368,7 @@
         "definition_id": "flak_helmet",
         "instance_id": "008cd99c-b687-4a89-b5f7-5a2424a3ca40",
         "location": "equipped",
+        "modification_ids": [],
         "note": "",
         "origin": "standard_issue",
         "quantity": 1.0
@@ -1955,6 +2382,7 @@
         "definition_id": "flak_vest",
         "instance_id": "143830f8-8560-4292-bf89-a2f5566cb9c8",
         "location": "equipped",
+        "modification_ids": [],
         "note": "",
         "origin": "standard_issue",
         "quantity": 1.0
@@ -1968,6 +2396,7 @@
         "definition_id": "frag_grenade",
         "instance_id": "4b00fbb4-5a97-498d-9581-46c3c2897ee9",
         "location": "carried",
+        "modification_ids": [],
         "note": "",
         "origin": "standard_issue",
         "quantity": 2.0
@@ -1981,6 +2410,7 @@
         "definition_id": "frag_grenade",
         "instance_id": "813e2ec6-8429-4ba0-b460-8caf770a5430",
         "location": "carried",
+        "modification_ids": [],
         "note": "",
         "origin": "speciality_issue",
         "quantity": 4.0
@@ -1994,6 +2424,7 @@
         "definition_id": "lamp_pack",
         "instance_id": "57ccd215-f3b6-419b-a121-833b2bcd5fe5",
         "location": "carried",
+        "modification_ids": [],
         "note": "",
         "origin": "standard_issue",
         "quantity": 1.0
@@ -2007,6 +2438,9 @@
         "definition_id": "lasgun_good",
         "instance_id": "326caf8b-4f87-4ddf-9d0c-b684ae8b0b62",
         "location": "carried",
+        "modification_ids": [
+          "red_dot_laser_sight"
+        ],
         "note": "",
         "origin": "speciality_issue",
         "quantity": 1.0
@@ -2020,6 +2454,7 @@
         "definition_id": "grooming_kit",
         "instance_id": "982ccb09-ac15-45b8-af7f-e6f529957784",
         "location": "carried",
+        "modification_ids": [],
         "note": "",
         "origin": "standard_issue",
         "quantity": 1.0
@@ -2033,6 +2468,7 @@
         "definition_id": "knife",
         "instance_id": "1e0f025c-faa4-429d-9e0d-8085bf3ed3a2",
         "location": "carried",
+        "modification_ids": [],
         "note": "",
         "origin": "standard_issue",
         "quantity": 1.0
@@ -2046,6 +2482,7 @@
         "definition_id": "lascarbine",
         "instance_id": "a2caee74-6922-409c-a40b-12bc01f9c2e9",
         "location": "carried",
+        "modification_ids": [],
         "note": "",
         "origin": "standard_issue",
         "quantity": 1.0
@@ -2059,6 +2496,7 @@
         "definition_id": "mess_kit",
         "instance_id": "8e316085-225c-4234-a3e5-1e5d82739b99",
         "location": "carried",
+        "modification_ids": [],
         "note": "",
         "origin": "standard_issue",
         "quantity": 1.0
@@ -2072,6 +2510,7 @@
         "definition_id": "poor_weather_gear",
         "instance_id": "1ad5280b-cae7-46d8-8a08-af817a39b14e",
         "location": "carried",
+        "modification_ids": [],
         "note": "",
         "origin": "standard_issue",
         "quantity": 1.0
@@ -2085,6 +2524,7 @@
         "definition_id": "rucksack",
         "instance_id": "0d0b9b91-9a86-49aa-af20-3474292af5c4",
         "location": "carried",
+        "modification_ids": [],
         "note": "",
         "origin": "standard_issue",
         "quantity": 1.0
@@ -2098,6 +2538,7 @@
         "definition_id": "smoke_grenade",
         "instance_id": "6003aea8-1527-44ff-a51b-765a2c2e7573",
         "location": "carried",
+        "modification_ids": [],
         "note": "",
         "origin": "standard_issue",
         "quantity": 2.0
@@ -2111,6 +2552,7 @@
         "definition_id": "uniform",
         "instance_id": "5fcc43b1-41c1-41a9-849b-ebb30f27e533",
         "location": "carried",
+        "modification_ids": [],
         "note": "",
         "origin": "standard_issue",
         "quantity": 1.0
@@ -2124,6 +2566,7 @@
         "definition_id": "primer",
         "instance_id": "ba2b2b1c-b793-4bcd-9dae-9c781772a226",
         "location": "carried",
+        "modification_ids": [],
         "note": "",
         "origin": "standard_issue",
         "quantity": 1.0
@@ -2152,7 +2595,7 @@
           "close_order_drill"
         ]
       },
-      "version": 2.0,
+      "version": 2,
       "workflow_state": "creation_complete"
     },
     "regiment_resolutions": {
@@ -2195,260 +2638,280 @@
     },
     "starting_loadout": [
       {
+        "craftsmanship": "Common",
         "definition_id": "basic_tools",
         "grant_id": "basic_tools|per_character|1",
         "issued_instance_ids": [
           "b9e1babe-ac9a-4cc9-a217-41aba07bdc7f"
         ],
         "note": "",
+        "origin": "standard_issue",
         "quantity": 1.0,
         "reconciliation": "present",
-        "scope": "per_character",
-        "origin": "standard_issue"
+        "scope": "per_character"
       },
       {
+        "craftsmanship": "Common",
         "definition_id": "blanket",
         "grant_id": "blanket|per_character|2",
         "issued_instance_ids": [
           "2c0566a6-e1c6-457b-8ec5-ab2933e122d7"
         ],
         "note": "",
+        "origin": "standard_issue",
         "quantity": 1.0,
         "reconciliation": "present",
-        "scope": "per_character",
-        "origin": "standard_issue"
+        "scope": "per_character"
       },
       {
+        "craftsmanship": "Common",
         "definition_id": "charge_pack",
         "grant_id": "charge_pack|per_character|3",
         "issued_instance_ids": [
           "47e51608-71ec-42c4-8437-e3ee6f3f62d4"
         ],
         "note": "",
+        "origin": "standard_issue",
         "quantity": 4.0,
         "reconciliation": "present",
-        "scope": "per_character",
-        "origin": "standard_issue"
+        "scope": "per_character"
       },
       {
+        "craftsmanship": "Common",
         "definition_id": "cognomen_tags",
         "grant_id": "cognomen_tags|per_character|4",
         "issued_instance_ids": [
           "22beeff6-c973-440c-b05a-020dd9e3decf"
         ],
         "note": "",
+        "origin": "standard_issue",
         "quantity": 1.0,
         "reconciliation": "present",
-        "scope": "per_character",
-        "origin": "standard_issue"
+        "scope": "per_character"
       },
       {
+        "craftsmanship": "Common",
         "definition_id": "rations",
         "grant_id": "rations|per_character|5",
         "issued_instance_ids": [
           "5cefec35-4554-4568-88a7-3d505376e3f5"
         ],
         "note": "",
+        "origin": "standard_issue",
         "quantity": 2.0,
         "reconciliation": "present",
-        "scope": "per_character",
-        "origin": "standard_issue"
+        "scope": "per_character"
       },
       {
+        "craftsmanship": "Common",
         "definition_id": "flak_helmet",
         "grant_id": "flak_helmet|per_character|6",
         "issued_instance_ids": [
           "008cd99c-b687-4a89-b5f7-5a2424a3ca40"
         ],
         "note": "",
+        "origin": "standard_issue",
         "quantity": 1.0,
         "reconciliation": "present",
-        "scope": "per_character",
-        "origin": "standard_issue"
+        "scope": "per_character"
       },
       {
+        "craftsmanship": "Common",
         "definition_id": "flak_vest",
         "grant_id": "flak_vest|per_character|7",
         "issued_instance_ids": [
           "143830f8-8560-4292-bf89-a2f5566cb9c8"
         ],
         "note": "",
+        "origin": "standard_issue",
         "quantity": 1.0,
         "reconciliation": "present",
-        "scope": "per_character",
-        "origin": "standard_issue"
+        "scope": "per_character"
       },
       {
+        "craftsmanship": "Common",
         "definition_id": "frag_grenade",
         "grant_id": "frag_grenade|per_character|8",
         "issued_instance_ids": [
           "4b00fbb4-5a97-498d-9581-46c3c2897ee9"
         ],
         "note": "",
+        "origin": "standard_issue",
         "quantity": 2.0,
         "reconciliation": "present",
-        "scope": "per_character",
-        "origin": "standard_issue"
+        "scope": "per_character"
       },
       {
+        "craftsmanship": "Common",
         "definition_id": "frag_grenade",
         "grant_id": "frag_grenade|per_character|9",
         "issued_instance_ids": [
           "813e2ec6-8429-4ba0-b460-8caf770a5430"
         ],
         "note": "",
+        "origin": "speciality_issue",
         "quantity": 4.0,
         "reconciliation": "present",
-        "scope": "per_character",
-        "origin": "speciality_issue"
+        "scope": "per_character"
       },
       {
+        "craftsmanship": "Common",
         "definition_id": "lamp_pack",
         "grant_id": "lamp_pack|per_character|10",
         "issued_instance_ids": [
           "57ccd215-f3b6-419b-a121-833b2bcd5fe5"
         ],
         "note": "",
+        "origin": "standard_issue",
         "quantity": 1.0,
         "reconciliation": "present",
-        "scope": "per_character",
-        "origin": "standard_issue"
+        "scope": "per_character"
       },
       {
+        "craftsmanship": "Good",
         "definition_id": "lasgun_good",
         "grant_id": "lasgun_good|per_character|11",
         "issued_instance_ids": [
           "326caf8b-4f87-4ddf-9d0c-b684ae8b0b62"
         ],
         "note": "",
+        "origin": "speciality_issue",
         "quantity": 1.0,
         "reconciliation": "present",
-        "scope": "per_character",
-        "origin": "speciality_issue"
+        "scope": "per_character"
       },
       {
+        "craftsmanship": "Common",
         "definition_id": "grooming_kit",
         "grant_id": "grooming_kit|per_character|12",
         "issued_instance_ids": [
           "982ccb09-ac15-45b8-af7f-e6f529957784"
         ],
         "note": "",
+        "origin": "standard_issue",
         "quantity": 1.0,
         "reconciliation": "present",
-        "scope": "per_character",
-        "origin": "standard_issue"
+        "scope": "per_character"
       },
       {
+        "craftsmanship": "Common",
         "definition_id": "knife",
         "grant_id": "knife|per_character|13",
         "issued_instance_ids": [
           "1e0f025c-faa4-429d-9e0d-8085bf3ed3a2"
         ],
         "note": "",
+        "origin": "standard_issue",
         "quantity": 1.0,
         "reconciliation": "present",
-        "scope": "per_character",
-        "origin": "standard_issue"
+        "scope": "per_character"
       },
       {
+        "craftsmanship": "Common",
         "definition_id": "lascarbine",
         "grant_id": "lascarbine|per_character|14",
         "issued_instance_ids": [
           "a2caee74-6922-409c-a40b-12bc01f9c2e9"
         ],
         "note": "",
+        "origin": "standard_issue",
         "quantity": 1.0,
         "reconciliation": "present",
-        "scope": "per_character",
-        "origin": "standard_issue"
+        "scope": "per_character"
       },
       {
+        "craftsmanship": "Common",
         "definition_id": "mess_kit",
         "grant_id": "mess_kit|per_character|15",
         "issued_instance_ids": [
           "8e316085-225c-4234-a3e5-1e5d82739b99"
         ],
         "note": "",
+        "origin": "standard_issue",
         "quantity": 1.0,
         "reconciliation": "present",
-        "scope": "per_character",
-        "origin": "standard_issue"
+        "scope": "per_character"
       },
       {
+        "craftsmanship": "Common",
         "definition_id": "poor_weather_gear",
         "grant_id": "poor_weather_gear|per_character|16",
         "issued_instance_ids": [
           "1ad5280b-cae7-46d8-8a08-af817a39b14e"
         ],
         "note": "",
+        "origin": "standard_issue",
         "quantity": 1.0,
         "reconciliation": "present",
-        "scope": "per_character",
-        "origin": "standard_issue"
+        "scope": "per_character"
       },
       {
+        "craftsmanship": "Common",
         "definition_id": "rucksack",
         "grant_id": "rucksack|per_character|17",
         "issued_instance_ids": [
           "0d0b9b91-9a86-49aa-af20-3474292af5c4"
         ],
         "note": "",
+        "origin": "standard_issue",
         "quantity": 1.0,
         "reconciliation": "present",
-        "scope": "per_character",
-        "origin": "standard_issue"
+        "scope": "per_character"
       },
       {
+        "craftsmanship": "Common",
         "definition_id": "smoke_grenade",
         "grant_id": "smoke_grenade|per_character|18",
         "issued_instance_ids": [
           "6003aea8-1527-44ff-a51b-765a2c2e7573"
         ],
         "note": "",
+        "origin": "standard_issue",
         "quantity": 2.0,
         "reconciliation": "present",
-        "scope": "per_character",
-        "origin": "standard_issue"
+        "scope": "per_character"
       },
       {
+        "craftsmanship": "Common",
         "definition_id": "uniform",
         "grant_id": "uniform|per_character|19",
         "issued_instance_ids": [
           "5fcc43b1-41c1-41a9-849b-ebb30f27e533"
         ],
         "note": "",
+        "origin": "standard_issue",
         "quantity": 1.0,
         "reconciliation": "present",
-        "scope": "per_character",
-        "origin": "standard_issue"
+        "scope": "per_character"
       },
       {
+        "craftsmanship": "Common",
         "definition_id": "primer",
         "grant_id": "primer|per_character|20",
         "issued_instance_ids": [
           "ba2b2b1c-b793-4bcd-9dae-9c781772a226"
         ],
         "note": "",
+        "origin": "standard_issue",
         "quantity": 1.0,
         "reconciliation": "present",
-        "scope": "per_character",
-        "origin": "standard_issue"
+        "scope": "per_character"
       }
     ],
-    "version": 4.0,
+    "version": 5,
     "workflow_state": "creation_complete",
-    "wounds_roll": 2.0
+    "wounds_roll": 2
   },
   "character_rules_content_version": "0.1.0-core-guardsmen",
-  "equipment_rules_content_version": "0.6.0-core-equipment",
+  "equipment_rules_content_version": "0.8.0-core-weapon-modifications",
   "extensions": {},
   "format": "owca_character",
   "inventory_rules_content_version": "0.7.0-core-inventory",
   "producer": {
     "name": "Only War Character Assistant",
-    "version": "0.7.0-dev"
+    "version": "0.7.1-dev"
   },
-  "saved_at_utc": "2026-08-09T05:48:54",
+  "saved_at_utc": "2026-08-21T14:47:42",
   "schema_version": "1.4.0",
-  "version": 4.0
+  "version": 5
 }

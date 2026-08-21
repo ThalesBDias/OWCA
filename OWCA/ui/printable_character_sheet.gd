@@ -435,7 +435,12 @@ func build_loadout_lines(result: Dictionary, comrade_name: String = "") -> Array
 		var owner := str(custodian.get("type", "character"))
 		var owner_label := comrade_name.strip_edges() if owner == "comrade" and not comrade_name.strip_edges().is_empty() else owner.capitalize()
 		var context := str(item.get("location", "carried")).capitalize() if owner == "character" else "%s / %s" % [owner_label, str(item.get("location", "carried")).capitalize()]
-		lines.append("%dx %s [%s]" % [item.get("quantity", 1), item.get("name", item.get("definition_id", "Item")), context])
+		var weapon := item.get("weapon", {}) as Dictionary
+		if bool(weapon.get("valid", false)):
+			lines.append("%dx %s [%s]" % [item.get("quantity", 1), _printable_weapon_name(item), context])
+			_append_printable_weapon_lines(lines, weapon)
+		else:
+			lines.append("%dx %s [%s]" % [item.get("quantity", 1), item.get("name", item.get("definition_id", "Item")), context])
 	var inventory := result.get("inventory", {}) as Dictionary
 	var encumbrance := inventory.get("encumbrance", {}) as Dictionary
 	if not encumbrance.is_empty():
@@ -444,6 +449,67 @@ func build_loadout_lines(result: Dictionary, comrade_name: String = "") -> Array
 	if not armour.is_empty():
 		lines.append("Armour: Head %d | Arms %d | Body %d | Legs %d" % [int((armour.get("Head", {}) as Dictionary).get("ap", 0)), int((armour.get("Arms", {}) as Dictionary).get("ap", 0)), int((armour.get("Body", {}) as Dictionary).get("ap", 0)), int((armour.get("Legs", {}) as Dictionary).get("ap", 0))])
 	return lines
+
+
+func _printable_weapon_name(item: Dictionary) -> String:
+	var item_name := str(item.get("name", item.get("definition_id", "Weapon")))
+	for legacy_prefix in ["Poor Craftsmanship ", "Common Craftsmanship ", "Good Craftsmanship ", "Best Craftsmanship "]:
+		if item_name.begins_with(legacy_prefix):
+			item_name = item_name.trim_prefix(legacy_prefix)
+			break
+	return "%s %s" % [item.get("craftsmanship", "Common"), item_name]
+
+
+func _append_printable_weapon_lines(lines: Array[String], weapon: Dictionary) -> void:
+	var installed_names: Array[String] = []
+	for modification_value: Variant in weapon.get("installed_modifications", []):
+		var modification := modification_value as Dictionary
+		installed_names.append(str(modification.get("name", modification.get("id", "Upgrade"))))
+	lines.append("Upgrades: %s" % (", ".join(installed_names) if not installed_names.is_empty() else "None"))
+	var profile := weapon.get("final_profile", {}) as Dictionary
+	var range_value: Variant = profile.get("range_m", profile.get("range_text", "-"))
+	var qualities := profile.get("qualities", []) as Array
+	lines.append("Final profile: Damage %s | Pen %s | Range %s | RoF %s | Magazine %s | Qualities %s | %.2f kg" % [
+		profile.get("damage", "-"),
+		profile.get("penetration", "-"),
+		range_value,
+		profile.get("rate_of_fire", "-"),
+		profile.get("magazine", "-"),
+		", ".join(qualities) if not qualities.is_empty() else "None",
+		float(weapon.get("final_weight_kg", 0.0))
+	])
+	for step_value: Variant in weapon.get("steps", []):
+		var step := step_value as Dictionary
+		var target := str(step.get("target", ""))
+		if not target.begins_with("situational.") and step.get("before") == step.get("after"):
+			continue
+		lines.append("%s: %s" % [step.get("label", "Rule"), _printable_step_summary(step)])
+
+
+func _printable_step_summary(step: Dictionary) -> String:
+	var target := str(step.get("target", ""))
+	if target.begins_with("situational."):
+		return str(step.get("summary", "Situational rule applies."))
+	var before: Variant = step.get("before")
+	var after: Variant = step.get("after")
+	var label := "Weapon value"
+	match target:
+		"weight_kg":
+			label = "Weight"
+			return "%s %.2f to %.2f kg" % [label, float(before), float(after)]
+		"profile.range_m":
+			label = "Range"
+		"profile.magazine":
+			label = "Magazine"
+		"profile.damage_bonus":
+			label = "Damage bonus"
+		"profile.penetration":
+			label = "Penetration"
+		"profile.qualities":
+			label = "Qualities"
+	if before is Array and after is Array:
+		return "%s %s to %s" % [label, ", ".join(before as Array), ", ".join(after as Array)]
+	return "%s %s to %s" % [label, before, after]
 
 
 func _comrade_name() -> String:
