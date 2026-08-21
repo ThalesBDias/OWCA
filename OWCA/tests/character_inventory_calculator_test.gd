@@ -13,6 +13,8 @@ func _init() -> void:
 	_test_capacity_boundaries()
 	_test_capacity_data_rejects_duplicate_rows()
 	_test_location_weight_and_source_omissions()
+	_test_modified_weapon_projection()
+	_test_invalid_weapon_modification_is_unresolved()
 	_test_armour_uses_highest_equipped_ap()
 	_test_missing_definitions_remain_visible()
 
@@ -72,6 +74,62 @@ func _test_location_weight_and_source_omissions() -> void:
 	_assert_equal(_nested(result, ["encumbrance", "status"]), "within_limit", "source-omitted weight does not make the total partial")
 	_assert_true(bool(_nested(result, ["encumbrance", "complete"])), "valid definitions produce a complete total")
 	_assert_equal((result.get("unknown_weight_items", []) as Array).size(), 0, "valid unweighted definitions are not unresolved weight entries")
+
+
+func _test_modified_weapon_projection() -> void:
+	var equipment := EquipmentDataRepository.new()
+	equipment.load_data()
+	var rules: RefCounted = RulesRepository.new()
+	rules.call("load_data")
+	var state := CharacterState.new()
+	var modified := _item("m36_lasgun", 1, "carried", "character")
+	modified["modification_ids"] = ["red_dot_laser_sight", "compact_upgrade"]
+	state.owned_items = [modified]
+	var result: Dictionary = InventoryCalculator.new().calculate(state, {"characteristic_bonuses": {"Strength": 3, "Toughness": 3}}, equipment, rules)
+	var projected := (result.get("items", []) as Array)[0] as Dictionary
+	_assert_equal((projected.get("profile", {}) as Dictionary).get("damage"), "1d10+2 E", "inventory exposes final Compact damage")
+	_assert_equal((projected.get("weapon", {}) as Dictionary).get("base_profile", {}).get("damage"), "1d10+3 E", "weapon projection retains base damage")
+	_assert_equal(projected.get("weight_kg"), 2.5, "inventory exposes final modified weight")
+	_assert_equal(_nested(result, ["encumbrance", "known_weight_kg"]), 2.5, "encumbrance uses final modified weight")
+	_assert_true(_steps_include_source(projected.get("weapon", {}) as Dictionary, "compact_upgrade"), "calculation steps identify Compact")
+	_assert_true(_steps_include_source(projected.get("weapon", {}) as Dictionary, "red_dot_laser_sight"), "calculation steps identify red-dot")
+
+	var weightless_catalog := equipment.data.duplicate(true)
+	for value: Variant in weightless_catalog.get("items", []):
+		var definition := value as Dictionary
+		if str(definition.get("id", "")) == "m36_lasgun":
+			definition.erase("weight_kg")
+	var fixture_path := "user://weightless_inventory_weapon_catalog.json"
+	var fixture := FileAccess.open(fixture_path, FileAccess.WRITE)
+	_assert_true(fixture != null, "weightless inventory fixture opens")
+	if fixture != null:
+		fixture.store_string(JSON.stringify(weightless_catalog))
+		fixture.close()
+		var weightless_repository := EquipmentDataRepository.new()
+		_assert_equal(weightless_repository.load_data(fixture_path), OK, "weightless inventory weapon catalogue loads")
+		var weightless_state := CharacterState.new()
+		weightless_state.owned_items = [_item("m36_lasgun", 1, "carried", "character")]
+		var weightless_result: Dictionary = InventoryCalculator.new().calculate(weightless_state, {"characteristic_bonuses": {"Strength": 3, "Toughness": 3}}, weightless_repository, rules)
+		_assert_equal(_nested(weightless_result, ["encumbrance", "known_weight_kg"]), 0.0, "omitted valid weapon weight contributes zero")
+		_assert_true(bool(_nested(weightless_result, ["encumbrance", "complete"])), "omitted valid weapon weight remains complete")
+	if FileAccess.file_exists(fixture_path):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(fixture_path))
+
+
+func _test_invalid_weapon_modification_is_unresolved() -> void:
+	var equipment := EquipmentDataRepository.new()
+	equipment.load_data()
+	var rules: RefCounted = RulesRepository.new()
+	rules.call("load_data")
+	var state := CharacterState.new()
+	var invalid := _item("m36_lasgun", 1, "carried", "character")
+	invalid["modification_ids"] = ["missing_upgrade"]
+	state.owned_items = [invalid]
+	var result: Dictionary = InventoryCalculator.new().calculate(state, {"characteristic_bonuses": {"Strength": 3, "Toughness": 3}}, equipment, rules)
+	_assert_true(not bool(result.get("valid", true)), "missing modification invalidates inventory")
+	_assert_equal((result.get("unresolved_items", []) as Array).size(), 1, "missing modification keeps weapon visible as unresolved")
+	_assert_equal((result.get("unknown_weight_items", []) as Array).size(), 1, "carried invalid weapon makes weight partial")
+	_assert_equal(_nested(result, ["encumbrance", "status"]), "partial", "invalid modified weapon yields partial encumbrance")
 
 
 func _test_armour_uses_highest_equipped_ap() -> void:
@@ -138,11 +196,19 @@ func _item(definition_id: String, quantity: int, location: String, custodian_typ
 		"definition_id": definition_id,
 		"quantity": quantity,
 		"craftsmanship": "Common",
+		"modification_ids": [],
 		"origin": "acquisition",
 		"location": location,
 		"custodian": { "type": custodian_type, "id": "" },
 		"note": ""
 	}
+
+
+func _steps_include_source(weapon: Dictionary, source_id: String) -> bool:
+	for value: Variant in weapon.get("steps", []):
+		if str((value as Dictionary).get("source_id", "")) == source_id:
+			return true
+	return false
 
 
 func _nested(value: Variant, path: Array) -> Variant:

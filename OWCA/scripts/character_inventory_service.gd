@@ -103,6 +103,59 @@ func transfer_item(state: CharacterState, instance_id: String, custodian_type: S
 	return { "error": OK, "message": "Equipment custody updated." }
 
 
+func install_modification(state: CharacterState, repository: EquipmentDataRepository, instance_id: String, modification_id: String, reason: String, timestamp_utc: String) -> Dictionary:
+	if timestamp_utc.strip_edges().is_empty():
+		return {"error": ERR_INVALID_PARAMETER, "message": "Weapon modification events require a UTC timestamp."}
+	var item := _find_item(state.owned_items, instance_id)
+	if item.is_empty():
+		return {"error": ERR_DOES_NOT_EXIST, "message": "Owned weapon was not found."}
+	var definition := repository.get_canonical_item(str(item.get("definition_id", "")))
+	if str(definition.get("category", "")) not in ["ranged_weapon", "melee_weapon"]:
+		return {"error": ERR_INVALID_DATA, "message": "Weapon upgrades can be installed only on ranged or melee weapon instances."}
+	var modification := repository.get_item(modification_id)
+	if modification.is_empty() or str(modification.get("category", "")) != "weapon_upgrade":
+		return {"error": ERR_INVALID_DATA, "message": "The selected weapon upgrade is unavailable."}
+	var current_ids := item.get("modification_ids", []) as Array
+	if modification_id in current_ids:
+		return {"error": OK, "message": "Weapon upgrade was already installed."}
+	var proposed := item.duplicate(true)
+	var proposed_ids := current_ids.duplicate()
+	proposed_ids.append(modification_id)
+	proposed["modification_ids"] = proposed_ids
+	var calculation := WeaponModificationCalculator.new().calculate(proposed, repository)
+	if not bool(calculation.get("valid", false)):
+		return {"error": ERR_INVALID_DATA, "message": str(calculation.get("message", "Weapon upgrade is incompatible.")), "code": calculation.get("code", "invalid")}
+	item["modification_ids"] = proposed_ids
+	state.inventory_events.append(_build_event("modification", item, reason, timestamp_utc))
+	state.changed.emit()
+	return {"error": OK, "message": "Weapon modification updated.", "weapon": calculation}
+
+
+func remove_modification(state: CharacterState, repository: EquipmentDataRepository, instance_id: String, modification_id: String, reason: String, timestamp_utc: String) -> Dictionary:
+	if timestamp_utc.strip_edges().is_empty():
+		return {"error": ERR_INVALID_PARAMETER, "message": "Weapon modification events require a UTC timestamp."}
+	var item := _find_item(state.owned_items, instance_id)
+	if item.is_empty():
+		return {"error": ERR_DOES_NOT_EXIST, "message": "Owned weapon was not found."}
+	var definition := repository.get_canonical_item(str(item.get("definition_id", "")))
+	if str(definition.get("category", "")) not in ["ranged_weapon", "melee_weapon"]:
+		return {"error": ERR_INVALID_DATA, "message": "Weapon upgrades can be removed only from ranged or melee weapon instances."}
+	var current_ids := item.get("modification_ids", []) as Array
+	if modification_id not in current_ids:
+		return {"error": OK, "message": "Weapon upgrade was not installed."}
+	var proposed := item.duplicate(true)
+	var proposed_ids := current_ids.duplicate()
+	proposed_ids.erase(modification_id)
+	proposed["modification_ids"] = proposed_ids
+	var calculation := WeaponModificationCalculator.new().calculate(proposed, repository)
+	if not bool(calculation.get("valid", false)):
+		return {"error": ERR_INVALID_DATA, "message": str(calculation.get("message", "The remaining weapon profile is invalid.")), "code": calculation.get("code", "invalid")}
+	item["modification_ids"] = proposed_ids
+	state.inventory_events.append(_build_event("modification", item, reason, timestamp_utc))
+	state.changed.emit()
+	return {"error": OK, "message": "Weapon modification updated.", "weapon": calculation}
+
+
 func add_item(state: CharacterState, repository: EquipmentDataRepository, definition_id: String, quantity: int, craftsmanship: String, origin: String, location: String, custodian_type: String, custodian_id: String, reason: String, timestamp_utc: String, note: String = "") -> Dictionary:
 	var definition := repository.get_item(definition_id)
 	if definition.is_empty() or str(definition.get("category", "")) == "weapon_upgrade":
@@ -155,6 +208,13 @@ func update_item(state: CharacterState, repository: EquipmentDataRepository, ins
 		return { "error": ERR_INVALID_PARAMETER, "message": "Grenades and missiles use Common craftsmanship only." }
 	if not definition.is_empty() and str(definition.get("category", "")) in ["ranged_weapon", "melee_weapon", "armour"] and quantity != 1:
 		return { "error": ERR_INVALID_PARAMETER, "message": "Weapons and armour must remain separate quantity-one instances." }
+	var weapon_calculation: Dictionary = {}
+	if not definition.is_empty() and str(repository.get_canonical_item(str(item.get("definition_id", ""))).get("category", "")) in ["ranged_weapon", "melee_weapon"]:
+		var proposed_weapon := item.duplicate(true)
+		proposed_weapon["craftsmanship"] = clean_craftsmanship
+		weapon_calculation = WeaponModificationCalculator.new().calculate(proposed_weapon, repository)
+		if not bool(weapon_calculation.get("valid", false)):
+			return {"error": ERR_INVALID_DATA, "message": str(weapon_calculation.get("message", "The complete weapon profile is invalid.")), "code": weapon_calculation.get("code", "invalid")}
 	var is_starting_instance := instance_id in _issued_instance_ids(state)
 	var origin_changed := not origin_override.is_empty() and origin_override != str(item.get("origin", ""))
 	if is_starting_instance and (quantity != int(item.get("quantity", 0)) or origin_changed):
@@ -169,7 +229,10 @@ func update_item(state: CharacterState, repository: EquipmentDataRepository, ins
 	item["note"] = clean_note
 	state.inventory_events.append(_build_event("correction", item, reason, timestamp_utc))
 	state.changed.emit()
-	return { "error": OK, "message": "Equipment record updated." }
+	var response := { "error": OK, "message": "Equipment record updated." }
+	if not weapon_calculation.is_empty():
+		response["weapon"] = weapon_calculation
+	return response
 
 
 ## Splits a stack without fabricating an acquisition. Both resulting records
@@ -231,6 +294,10 @@ func finalize_loadout(state: CharacterState, repository: EquipmentDataRepository
 			return { "error": ERR_INVALID_DATA, "message": "Resolve missing catalogue definitions before finalizing the loadout." }
 		if str(definition.get("category", "")) in ["ranged_weapon", "melee_weapon", "armour"] and int(item.get("quantity", 0)) != 1:
 			return { "error": ERR_INVALID_DATA, "message": "Weapons and armour must remain separate quantity-one instances." }
+		if str(repository.get_canonical_item(str(item.get("definition_id", ""))).get("category", "")) in ["ranged_weapon", "melee_weapon"]:
+			var calculation := WeaponModificationCalculator.new().calculate(item, repository)
+			if not bool(calculation.get("valid", false)):
+				return {"error": ERR_INVALID_DATA, "message": "Resolve invalid weapon profile: %s" % calculation.get("message", "calculation failed")}
 	state.loadout_state = CharacterState.LOADOUT_FINALIZED
 	state.changed.emit()
 	return { "error": OK, "message": "Loadout finalized." }
@@ -254,30 +321,61 @@ func rebuild_starting_loadout(state: CharacterState, expected_grants: Array, rep
 		var grant := grant_value as Dictionary
 		if _starting_origin_splits(grant, int(grant.get("quantity", 0))).is_empty():
 			return { "error": ERR_INVALID_DATA, "message": "Current starting grants contain inconsistent issue origins." }
-	var issued_ids: Dictionary = {}
+	var expected_slices := _expand_expected_grants(expected_grants, repository)
+	if expected_slices.is_empty():
+		return {"error": ERR_INVALID_DATA, "message": "Current starting grants could not be normalized."}
+	var current_pools: Dictionary = {}
 	for grant: Dictionary in state.starting_loadout:
-		for issued_value: Variant in grant.get("issued_instance_ids", []):
-			issued_ids[str(issued_value)] = true
+		var key := _materialized_grant_key(grant)
+		if not current_pools.has(key):
+			current_pools[key] = []
+		(current_pools[key] as Array).append(grant)
+	var retained_grants: Array[Dictionary] = []
+	var unmatched_expected: Array = []
+	var retained_issued_ids: Dictionary = {}
+	for expected: Dictionary in expected_slices:
+		var key := _expected_slice_key(expected)
+		var pool := current_pools.get(key, []) as Array
+		if pool.is_empty():
+			unmatched_expected.append(expected)
+			continue
+		var retained := pool.pop_front() as Dictionary
+		retained_grants.append(retained.duplicate(true))
+		for issued_value: Variant in retained.get("issued_instance_ids", []):
+			retained_issued_ids[str(issued_value)] = true
+	var replacement_state := CharacterState.new()
+	replacement_state.comrade = state.comrade.duplicate(true)
+	if not unmatched_expected.is_empty():
+		var materialized := materialize_starting_loadout(replacement_state, unmatched_expected, repository, timestamp_utc)
+		if int(materialized.get("error", ERR_INVALID_DATA)) != OK:
+			return materialized
+	var all_previous_issued_ids := _issued_instance_ids(state)
 	var retained_items: Array[Dictionary] = []
 	var retained_events: Array[Dictionary] = state.inventory_events.duplicate(true)
 	for item: Dictionary in state.owned_items:
-		if issued_ids.has(str(item.get("instance_id", ""))):
-			retained_events.append(_build_event("correction", item, "Starting issue replaced after creation input change", timestamp_utc))
-		else:
+		var instance_id := str(item.get("instance_id", ""))
+		if retained_issued_ids.has(instance_id) or not all_previous_issued_ids.has(instance_id):
 			retained_items.append(item.duplicate(true))
-	state.loadout_state = CharacterState.LOADOUT_UNPREPARED
-	state.starting_loadout.clear()
-	state.owned_items.clear()
-	state.inventory_events.clear()
-	var materialized := materialize_starting_loadout(state, expected_grants, repository, timestamp_utc)
-	if int(materialized.get("error", ERR_INVALID_DATA)) != OK:
-		return materialized
-	var new_items: Array[Dictionary] = state.owned_items.duplicate(true)
-	var new_events: Array[Dictionary] = state.inventory_events.duplicate(true)
+		else:
+			retained_events.append(_build_event("correction", item, "Starting issue replaced after creation input change", timestamp_utc))
+	var used_grant_ids: Dictionary = {}
+	for grant: Dictionary in retained_grants:
+		used_grant_ids[str(grant.get("grant_id", ""))] = true
+	var replacement_index := 0
+	for grant: Dictionary in replacement_state.starting_loadout:
+		replacement_index += 1
+		var grant_id := str(grant.get("grant_id", ""))
+		while used_grant_ids.has(grant_id):
+			grant_id = "%s|r%d" % [grant.get("grant_id", "grant"), replacement_index]
+			replacement_index += 1
+		grant["grant_id"] = grant_id
+		used_grant_ids[grant_id] = true
+	state.starting_loadout = retained_grants
+	state.starting_loadout.append_array(replacement_state.starting_loadout.duplicate(true))
 	state.owned_items = retained_items
-	state.owned_items.append_array(new_items)
+	state.owned_items.append_array(replacement_state.owned_items.duplicate(true))
 	state.inventory_events = retained_events
-	state.inventory_events.append_array(new_events)
+	state.inventory_events.append_array(replacement_state.inventory_events.duplicate(true))
 	state.loadout_state = CharacterState.LOADOUT_DRAFT
 	state.changed.emit()
 	return { "error": OK, "message": "Starting grants rebuilt from current creation choices." }
@@ -438,3 +536,37 @@ func _fallback_grant_craftsmanship(grants: Array[Dictionary], definition_id: Str
 		if str(grant.get("definition_id", "")) == definition_id and str(grant.get("scope", "per_character")) == scope:
 			return str(grant.get("craftsmanship", "Common"))
 	return ""
+
+
+func _expand_expected_grants(grants: Array, repository: EquipmentDataRepository) -> Array[Dictionary]:
+	var output: Array[Dictionary] = []
+	for value: Variant in grants:
+		if not value is Dictionary:
+			return []
+		var grant := value as Dictionary
+		var definition_id := str(grant.get("id", ""))
+		var definition := repository.get_item(definition_id)
+		var quantity := int(grant.get("quantity", 0))
+		var scope := str(grant.get("scope", "per_character"))
+		var craftsmanship := str(grant.get("craftsmanship", definition.get("craftsmanship", "Common")))
+		for split: Dictionary in _starting_origin_splits(grant, quantity):
+			var origin := str(split.get("origin", "standard_issue"))
+			var split_quantity := int(split.get("quantity", 0))
+			output.append({
+				"id": definition_id,
+				"quantity": split_quantity,
+				"scope": scope,
+				"craftsmanship": craftsmanship,
+				"origin_quantities": {origin: split_quantity}
+			})
+	return output
+
+
+func _expected_slice_key(grant: Dictionary) -> String:
+	var origins := grant.get("origin_quantities", {}) as Dictionary
+	var origin := str(origins.keys()[0]) if not origins.is_empty() else "standard_issue"
+	return "%s|%s|%s|%s|%d" % [grant.get("id", ""), grant.get("scope", "per_character"), grant.get("craftsmanship", "Common"), origin, grant.get("quantity", 0)]
+
+
+func _materialized_grant_key(grant: Dictionary) -> String:
+	return "%s|%s|%s|%s|%d" % [grant.get("definition_id", ""), grant.get("scope", "per_character"), grant.get("craftsmanship", "Common"), grant.get("origin", "standard_issue"), grant.get("quantity", 0)]

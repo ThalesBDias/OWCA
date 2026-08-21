@@ -38,9 +38,24 @@ func calculate(state: CharacterState, character_calculation: Dictionary, equipme
 			continue
 		item["name"] = str(definition.get("name", definition_id))
 		item["category"] = str(definition.get("category", ""))
+		var calculated_weight := float(definition.get("weight_kg", 0.0))
+		if str(definition.get("category", "")) in ["ranged_weapon", "melee_weapon"]:
+			var weapon := WeaponModificationCalculator.new().calculate(owned, equipment_repository)
+			item["weapon"] = weapon
+			if not bool(weapon.get("valid", false)):
+				item["resolution_error"] = str(weapon.get("message", "Weapon profile could not be calculated."))
+				(result["unresolved_items"] as Array).append(item.duplicate(true))
+				(result["items"] as Array).append(item)
+				if affects_character and carried:
+					(result["unknown_weight_items"] as Array).append(item.duplicate(true))
+				result["valid"] = false
+				continue
+			item["profile"] = (weapon.get("final_profile", {}) as Dictionary).duplicate(true)
+			calculated_weight = float(weapon.get("final_weight_kg", 0.0))
+		item["weight_kg"] = snappedf(calculated_weight, 0.01)
 		(result["items"] as Array).append(item)
 		if affects_character and carried:
-			known_weight += float(definition.get("weight_kg", 0.0)) * float(owned.get("quantity", 1))
+			known_weight += calculated_weight * float(owned.get("quantity", 1))
 		if affects_character and str(owned.get("location", "")) == "equipped" and definition.has("armour"):
 			_apply_armour(result["armour_by_location"] as Dictionary, owned, definition)
 	var bonuses := character_calculation.get("characteristic_bonuses", {}) as Dictionary
