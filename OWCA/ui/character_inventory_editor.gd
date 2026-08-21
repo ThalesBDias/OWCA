@@ -20,6 +20,7 @@ var inventory_service: RefCounted = InventoryServiceScript.new()
 var catalogue_search: LineEdit
 var category_filter: OptionButton
 var catalogue_selector: OptionButton
+var catalogue_craftsmanship_selector: OptionButton
 var catalogue_details: RichTextLabel
 var _catalogue_matches: Array[Dictionary] = []
 var owned_custodian_filter: String = "all"
@@ -379,8 +380,19 @@ func _build_catalogue_add_controls(parent: VBoxContainer, add_button_label: Stri
 	add_row.add_theme_constant_override("separation", 6)
 	catalogue_selector = OptionButton.new()
 	catalogue_selector.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	catalogue_selector.item_selected.connect(func(_index: int) -> void: _render_catalogue_details())
+	catalogue_selector.item_selected.connect(func(_index: int) -> void: _catalogue_selection_changed())
 	add_row.add_child(catalogue_selector)
+	if presentation_mode == MODE_MAINTENANCE:
+		catalogue_craftsmanship_selector = OptionButton.new()
+		catalogue_craftsmanship_selector.name = "CatalogueCraftsmanshipSelector"
+		for value in CharacterState.CRAFTSMANSHIP_VALUES:
+			catalogue_craftsmanship_selector.add_item(value)
+			catalogue_craftsmanship_selector.set_item_metadata(catalogue_craftsmanship_selector.item_count - 1, value)
+			if value == "Common":
+				catalogue_craftsmanship_selector.select(catalogue_craftsmanship_selector.item_count - 1)
+		add_row.add_child(catalogue_craftsmanship_selector)
+	else:
+		catalogue_craftsmanship_selector = null
 	var add_button := Button.new()
 	add_button.text = add_button_label
 	add_button.pressed.connect(_add_selected_item)
@@ -406,23 +418,14 @@ func _refresh_catalogue_matches() -> void:
 	var category := "all"
 	if category_filter != null and category_filter.item_count > 0:
 		category = str(category_filter.get_item_metadata(category_filter.selected))
-	for item: Dictionary in character_repository.equipment_repository.get_items():
+	for item: Dictionary in character_repository.equipment_repository.get_selectable_items():
 		var item_category := str(item.get("category", ""))
 		if item_category == "weapon_upgrade" or (category != "all" and item_category != category):
 			continue
 		if not query.is_empty() and query not in _search_text(item):
 			continue
 		_catalogue_matches.append(item)
-	if presentation_mode == MODE_CREATION:
-		_catalogue_matches.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
-			var a_is_variant := a.has("base_definition_id")
-			var b_is_variant := b.has("base_definition_id")
-			if a_is_variant != b_is_variant:
-				return not a_is_variant
-			return str(a.get("name", "")) < str(b.get("name", ""))
-		)
-	else:
-		_catalogue_matches.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return str(a.get("name", "")) < str(b.get("name", "")))
+	_catalogue_matches.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return str(a.get("name", "")) < str(b.get("name", "")))
 	for item: Dictionary in _catalogue_matches:
 		var selector_text := str(item.get("name", item.get("id", "Item")))
 		if presentation_mode == MODE_MAINTENANCE:
@@ -431,7 +434,23 @@ func _refresh_catalogue_matches() -> void:
 				str(item.get("category", "")).replace("_", " ").capitalize()
 			]
 		catalogue_selector.add_item(selector_text)
+	_catalogue_selection_changed()
+
+
+func _catalogue_selection_changed() -> void:
+	_refresh_catalogue_craftsmanship()
 	_render_catalogue_details()
+
+
+func _refresh_catalogue_craftsmanship() -> void:
+	if catalogue_craftsmanship_selector == null:
+		return
+	var eligible := false
+	if not _catalogue_matches.is_empty() and catalogue_selector.selected >= 0:
+		eligible = str((_catalogue_matches[catalogue_selector.selected] as Dictionary).get("category", "")) in ["ranged_weapon", "melee_weapon"]
+	_select_option_metadata(catalogue_craftsmanship_selector, "Common")
+	catalogue_craftsmanship_selector.disabled = not eligible
+	catalogue_craftsmanship_selector.tooltip_text = "Choose craftsmanship for this individual weapon." if eligible else "Craftsmanship modifiers apply only to individual ranged and melee weapons."
 
 
 func _render_catalogue_details() -> void:
@@ -513,6 +532,13 @@ func _build_item_row(owned: Dictionary, resolved: Dictionary) -> Control:
 		craftsmanship.set_item_metadata(craftsmanship.item_count - 1, value)
 		if value == str(owned.get("craftsmanship", "Common")):
 			craftsmanship.select(craftsmanship.item_count - 1)
+	var weapon_category := str(resolved.get("category", "")) in ["ranged_weapon", "melee_weapon"]
+	craftsmanship.disabled = not weapon_category
+	if not weapon_category:
+		_select_option_metadata(craftsmanship, "Common")
+		craftsmanship.tooltip_text = "Craftsmanship modifiers apply only to individual ranged and melee weapons."
+	else:
+		craftsmanship.tooltip_text = "Craftsmanship belongs to this individual owned weapon."
 	controls.add_child(craftsmanship)
 	var location := OptionButton.new()
 	for value in CharacterState.ITEM_LOCATIONS:
@@ -578,7 +604,160 @@ func _build_item_row(owned: Dictionary, resolved: Dictionary) -> Control:
 		_emit_result(result)
 	)
 	details_row.add_child(remove)
+	if weapon_category:
+		column.add_child(_build_weapon_modification_panel(owned, resolved))
 	return panel
+
+
+func _build_weapon_modification_panel(owned: Dictionary, resolved: Dictionary) -> VBoxContainer:
+	var panel := VBoxContainer.new()
+	panel.name = "WeaponModificationPanel"
+	panel.add_theme_constant_override("separation", 6)
+	panel.add_child(_heading("WEAPON CRAFTSMANSHIP AND MODIFICATIONS"))
+	var weapon := resolved.get("weapon", {}) as Dictionary
+	if weapon.is_empty():
+		weapon = WeaponModificationCalculator.new().calculate(owned, character_repository.equipment_repository)
+	var comparison := _label(_weapon_profile_comparison(weapon))
+	comparison.name = "WeaponProfileComparison"
+	panel.add_child(comparison)
+	var breakdown := _label(_weapon_calculation_breakdown(weapon))
+	breakdown.name = "WeaponCalculationBreakdown"
+	panel.add_child(breakdown)
+
+	var installed := weapon.get("installed_modifications", []) as Array
+	if installed.is_empty():
+		panel.add_child(_label("Installed upgrades: None"))
+	else:
+		panel.add_child(_label("INSTALLED UPGRADES"))
+		for modification_value: Variant in installed:
+			var modification := modification_value as Dictionary
+			var installed_row := VBoxContainer.new()
+			installed_row.add_child(_label(str(modification.get("name", modification.get("id", "Upgrade")))))
+			var remove := Button.new()
+			remove.name = "RemoveModificationButton"
+			remove.text = "REMOVE UPGRADE"
+			remove.pressed.connect(_remove_weapon_modification.bind(
+				str(owned.get("instance_id", "")),
+				str(modification.get("id", ""))
+			))
+			installed_row.add_child(remove)
+			panel.add_child(installed_row)
+
+	panel.add_child(_label("AVAILABLE UPGRADES"))
+	var selector := OptionButton.new()
+	selector.name = "ModificationSelector"
+	selector.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var first_compatible := -1
+	var installed_ids := owned.get("modification_ids", []) as Array
+	for modification: Dictionary in character_repository.equipment_repository.get_weapon_upgrades():
+		var modification_id := str(modification.get("id", ""))
+		if modification_id in installed_ids:
+			continue
+		var evaluation := WeaponModificationCalculator.new().evaluate_install(owned, modification_id, character_repository.equipment_repository)
+		var compatible := bool(evaluation.get("compatible", false))
+		var text := str(modification.get("name", modification_id))
+		if not compatible:
+			text += " — %s" % evaluation.get("message", "Incompatible")
+		selector.add_item(text)
+		var index := selector.item_count - 1
+		selector.set_item_metadata(index, modification_id)
+		selector.set_item_disabled(index, not compatible)
+		if compatible and first_compatible < 0:
+			first_compatible = index
+	if first_compatible >= 0:
+		selector.select(first_compatible)
+	panel.add_child(selector)
+	var compatibility_details := _label("")
+	compatibility_details.name = "ModificationCompatibilityDetails"
+	panel.add_child(compatibility_details)
+	var install := Button.new()
+	install.name = "InstallModificationButton"
+	install.text = "INSTALL SELECTED UPGRADE"
+	install.disabled = first_compatible < 0
+	install.pressed.connect(func() -> void:
+		if selector.selected < 0 or selector.is_item_disabled(selector.selected):
+			return
+		var result: Dictionary = inventory_service.call(
+			"install_modification",
+			state,
+			character_repository.equipment_repository,
+			str(owned.get("instance_id", "")),
+			str(selector.get_item_metadata(selector.selected)),
+			"Installed by player",
+			_timestamp()
+		)
+		_emit_result(result)
+	)
+	selector.item_selected.connect(func(index: int) -> void:
+		_update_modification_selection(selector, install, compatibility_details, owned, index)
+	)
+	panel.add_child(install)
+	if selector.item_count == 0:
+		compatibility_details.text = "Every supported upgrade is already installed."
+	elif first_compatible >= 0:
+		_update_modification_selection(selector, install, compatibility_details, owned, first_compatible)
+	else:
+		compatibility_details.text = "No remaining supported upgrade is compatible with this weapon. Incompatible choices remain listed above with their reason."
+	return panel
+
+
+func _update_modification_selection(selector: OptionButton, install: Button, details: Label, owned: Dictionary, index: int) -> void:
+	if index < 0 or index >= selector.item_count:
+		install.disabled = true
+		return
+	var modification_id := str(selector.get_item_metadata(index))
+	var evaluation := WeaponModificationCalculator.new().evaluate_install(owned, modification_id, character_repository.equipment_repository)
+	var compatible := bool(evaluation.get("compatible", false))
+	details.text = "Compatible with this weapon." if compatible else str(evaluation.get("message", "This upgrade is incompatible."))
+	selector.tooltip_text = details.text
+	install.disabled = not compatible
+
+
+func _remove_weapon_modification(instance_id: String, modification_id: String) -> void:
+	var result: Dictionary = inventory_service.call(
+		"remove_modification",
+		state,
+		character_repository.equipment_repository,
+		instance_id,
+		modification_id,
+		"Removed by player",
+		_timestamp()
+	)
+	_emit_result(result)
+
+
+func _weapon_profile_comparison(weapon: Dictionary) -> String:
+	if not bool(weapon.get("valid", false)):
+		return "Weapon profile unavailable: %s" % weapon.get("message", "calculation failed")
+	return "Base: %s\nFinal: %s" % [
+		_weapon_profile_summary(weapon.get("base_profile", {}) as Dictionary, float(weapon.get("base_weight_kg", 0.0))),
+		_weapon_profile_summary(weapon.get("final_profile", {}) as Dictionary, float(weapon.get("final_weight_kg", 0.0)))
+	]
+
+
+func _weapon_profile_summary(profile: Dictionary, weight_kg: float) -> String:
+	var range_value: Variant = profile.get("range_m", profile.get("range_text", "-"))
+	var qualities := profile.get("qualities", []) as Array
+	return "Damage %s | Pen %s | Range %s | Magazine %s | Weight %.2f kg | Qualities %s" % [
+		profile.get("damage", "-"),
+		profile.get("penetration", "-"),
+		range_value,
+		profile.get("magazine", "-"),
+		weight_kg,
+		", ".join(qualities) if not qualities.is_empty() else "None"
+	]
+
+
+func _weapon_calculation_breakdown(weapon: Dictionary) -> String:
+	if not bool(weapon.get("valid", false)):
+		return str(weapon.get("message", "Weapon profile calculation failed."))
+	var lines: Array[String] = []
+	for step_value: Variant in weapon.get("steps", []):
+		var step := step_value as Dictionary
+		lines.append("%s: %s" % [step.get("label", "Rule"), step.get("summary", "Applied")])
+	if lines.is_empty():
+		lines.append("Common craftsmanship; no profile-changing upgrades installed.")
+	return "\n".join(lines)
 
 
 func _build_history() -> void:
@@ -629,7 +808,9 @@ func _add_selected_item() -> void:
 	if _catalogue_matches.is_empty() or catalogue_selector.selected < 0:
 		return
 	var definition := _catalogue_matches[catalogue_selector.selected]
-	var craftsmanship := "Common" if presentation_mode == MODE_CREATION else str(definition.get("craftsmanship", "Common"))
+	var craftsmanship := "Common"
+	if presentation_mode == MODE_MAINTENANCE and catalogue_craftsmanship_selector != null and not catalogue_craftsmanship_selector.disabled:
+		craftsmanship = str(catalogue_craftsmanship_selector.get_item_metadata(catalogue_craftsmanship_selector.selected))
 	var result: Dictionary = inventory_service.call("add_item", state, character_repository.equipment_repository, str(definition.get("id", "")), 1, craftsmanship, "later_issue", "carried", "character", "", "Added by player", _timestamp())
 	_emit_result(result)
 
@@ -652,6 +833,13 @@ func _is_starting_instance(instance_id: String) -> bool:
 
 func _timestamp() -> String:
 	return Time.get_datetime_string_from_system(true) + "Z"
+
+
+func _select_option_metadata(selector: OptionButton, metadata: Variant) -> void:
+	for index in selector.item_count:
+		if selector.get_item_metadata(index) == metadata:
+			selector.select(index)
+			return
 
 
 func _heading(text: String) -> Label:

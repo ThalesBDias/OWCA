@@ -57,6 +57,8 @@ func _run() -> void:
 		creator.call("_render_active_stage")
 		await process_frame
 		_assert_loadout_surface_fits(creator, test_size)
+		_assert_true(_find_named(creator.get("stage_content") as Node, "CatalogueCraftsmanshipSelector") == null, "creation catalogue omits craftsmanship administration at %s" % test_size)
+		_assert_true(_find_named(creator.get("stage_content") as Node, "WeaponModificationPanel") == null, "creation loadout omits modification administration at %s" % test_size)
 
 	root.size = Vector2i(960, 650)
 	await process_frame

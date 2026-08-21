@@ -58,6 +58,9 @@ func _run() -> void:
 	var inventory_service := CharacterInventoryService.new()
 	inventory_service.materialize_starting_loadout(prepared_state, starting_grants, repository.equipment_repository, "2026-08-15T12:00:00Z")
 	inventory_service.add_item(prepared_state, repository.equipment_repository, "charge_pack", 4, "Common", "later_issue", "carried", "comrade", str(prepared_state.comrade.get("id", "")), "Reserve ammunition assigned to Comrade", "2026-08-15T12:05:00Z")
+	inventory_service.add_item(prepared_state, repository.equipment_repository, "m36_lasgun", 1, "Good", "later_issue", "carried", "character", "", "Good-craftsmanship test weapon", "2026-08-15T12:06:00Z")
+	var m36_instance_id := str((prepared_state.owned_items.back() as Dictionary).get("instance_id", ""))
+	inventory_service.add_item(prepared_state, repository.equipment_repository, "frag_grenade", 1, "Common", "later_issue", "carried", "character", "", "Grenade eligibility fixture", "2026-08-15T12:07:00Z")
 	var prepared_calculation := CharacterCalculator.new().calculate(prepared_state, regiment_repository, repository)
 	prepared_calculation["starting_equipment"] = starting_grants.duplicate(true)
 	var editor_script := load("res://OWCA/ui/character_inventory_editor.gd") as GDScript
@@ -79,22 +82,89 @@ func _run() -> void:
 	var catalogue_search := maintenance_editor.get("catalogue_search") as LineEdit
 	var maintenance_category := maintenance_editor.get("category_filter") as OptionButton
 	var maintenance_selector := maintenance_editor.get("catalogue_selector") as OptionButton
+	var maintenance_craftsmanship := maintenance_editor.get("catalogue_craftsmanship_selector") as OptionButton
 	var maintenance_add := _find_button(maintenance_editor, "ADD TO CHARACTER")
 	var catalogue_details := maintenance_editor.get("catalogue_details") as RichTextLabel
 	_assert_true(catalogue_search != null and catalogue_details != null, "catalogue exposes searchable item details")
-	_assert_true(maintenance_category != null and maintenance_selector != null and maintenance_add != null, "maintenance catalogue retains its filter and add controls")
+	_assert_true(maintenance_category != null and maintenance_selector != null and maintenance_craftsmanship != null and maintenance_add != null, "maintenance catalogue retains its filter, craftsmanship, and add controls")
 	if catalogue_search != null and maintenance_category != null:
 		_assert_true(is_equal_approx(catalogue_search.get_global_rect().position.y, maintenance_category.get_global_rect().position.y), "maintenance search and category remain in one horizontal row")
-	if maintenance_selector != null and maintenance_add != null:
+	if maintenance_selector != null and maintenance_craftsmanship != null and maintenance_add != null:
 		_assert_true(is_equal_approx(maintenance_selector.get_global_rect().position.y, maintenance_add.get_global_rect().position.y), "maintenance selector and add action remain in one horizontal row")
+		_assert_true(is_equal_approx(maintenance_craftsmanship.get_global_rect().position.y, maintenance_add.get_global_rect().position.y), "maintenance craftsmanship and add action remain in one horizontal row")
 	if catalogue_search != null and catalogue_details != null:
+		catalogue_search.text = "las carbine"
+		catalogue_search.text_changed.emit(catalogue_search.text)
+		await process_frame
+		_assert_equal(maintenance_selector.item_count, 1, "craftsmanship aliases do not duplicate the Las carbine catalogue entry")
+		_assert_true(maintenance_selector.get_item_text(0).begins_with("Las carbine"), "maintenance catalogue presents the base Las carbine")
+		_assert_true(not maintenance_craftsmanship.disabled, "ranged weapons enable the catalogue craftsmanship selector")
+		_select_metadata(maintenance_craftsmanship, "Good")
+		maintenance_add.pressed.emit()
+		_assert_equal((prepared_state.owned_items.back() as Dictionary).get("definition_id", ""), "lascarbine", "maintenance adds the canonical Las carbine definition")
+		_assert_equal((prepared_state.owned_items.back() as Dictionary).get("craftsmanship", ""), "Good", "maintenance applies the separately selected craftsmanship to Las carbine")
 		catalogue_search.text = "m36 lasgun"
 		catalogue_search.text_changed.emit(catalogue_search.text)
 		await process_frame
+		_assert_equal(maintenance_selector.item_count, 1, "craftsmanship aliases do not duplicate the M36 catalogue entry")
 		_assert_true("Reload Full" in catalogue_details.text, "weapon details include reload time")
 		_assert_true("Qualities Reliable" in catalogue_details.text, "weapon details include qualities")
+		catalogue_search.text = "frag grenade"
+		catalogue_search.text_changed.emit(catalogue_search.text)
+		await process_frame
+		_assert_true(maintenance_craftsmanship.disabled, "grenades disable the catalogue craftsmanship selector")
+		_assert_equal(maintenance_craftsmanship.get_item_metadata(maintenance_craftsmanship.selected), "Common", "grenade additions are locked to Common craftsmanship")
+	var m36_card := _find_item_card(maintenance_editor, "M36 lasgun")
+	var grenade_card := _find_item_card(maintenance_editor, "Frag grenade")
+	var m36_weapon_panel := _find_named(m36_card, "WeaponModificationPanel")
+	_assert_true(m36_weapon_panel != null, "an owned M36 exposes weapon modification controls")
+	_assert_true(_find_named(grenade_card, "WeaponModificationPanel") == null, "grenades do not expose weapon modification controls")
+	var grenade_craftsmanship := _find_named(grenade_card, "CraftsmanshipSelector") as OptionButton
+	_assert_true(grenade_craftsmanship != null and grenade_craftsmanship.disabled, "owned grenades lock craftsmanship editing")
+	if grenade_craftsmanship != null:
+		_assert_equal(grenade_craftsmanship.get_item_metadata(grenade_craftsmanship.selected), "Common", "owned grenades remain Common craftsmanship")
+	var comparison := _find_named(m36_weapon_panel, "WeaponProfileComparison") as Label
+	var breakdown := _find_named(m36_weapon_panel, "WeaponCalculationBreakdown") as Label
+	var modification_selector := _find_named(m36_weapon_panel, "ModificationSelector") as OptionButton
+	var install_modification := _find_named(m36_weapon_panel, "InstallModificationButton") as Button
+	_assert_true(comparison != null and "Base" in comparison.text and "Final" in comparison.text, "weapon rows compare base and final profiles")
+	_assert_true(breakdown != null and not breakdown.text.is_empty(), "weapon rows explain their profile calculation")
+	_assert_true(modification_selector != null and install_modification != null, "weapon rows expose upgrade selection and installation")
+	if modification_selector != null and install_modification != null:
+		var mono_index := _find_metadata_index(modification_selector, "mono_melee_upgrade")
+		_assert_true(mono_index >= 0 and modification_selector.is_item_disabled(mono_index), "incompatible upgrades remain visible and disabled")
+		var red_dot_index := _find_metadata_index(modification_selector, "red_dot_laser_sight")
+		_assert_true(red_dot_index >= 0 and not modification_selector.is_item_disabled(red_dot_index), "compatible upgrades remain selectable")
+		if red_dot_index >= 0:
+			modification_selector.select(red_dot_index)
+			modification_selector.item_selected.emit(red_dot_index)
+			var modification_messages: Array[String] = []
+			maintenance_editor.connect("inventory_changed", func(message: String) -> void: modification_messages.append(message))
+			install_modification.pressed.emit()
+			_assert_true("red_dot_laser_sight" in ((_owned_item(prepared_state, m36_instance_id).get("modification_ids", []) as Array)), "install action mutates the selected owned weapon")
+			_assert_true(not modification_messages.is_empty(), "install action emits an inventory refresh")
 	_assert_interactive_controls_fit_width(maintenance_editor, 960.0)
 	maintenance_editor.queue_free()
+	await process_frame
+
+	var modified_calculation := CharacterCalculator.new().calculate(prepared_state, regiment_repository, repository)
+	modified_calculation["starting_equipment"] = starting_grants.duplicate(true)
+	var modified_editor := editor_script.new() as VBoxContainer
+	root.add_child(modified_editor)
+	modified_editor.call("configure", prepared_state, modified_calculation, repository, &"maintenance")
+	modified_editor.size.x = 960.0
+	await process_frame
+	var modified_m36_panel := _find_named(_find_item_card(modified_editor, "M36 lasgun"), "WeaponModificationPanel")
+	var remove_modification := _find_named(modified_m36_panel, "RemoveModificationButton") as Button
+	_assert_true(remove_modification != null, "installed upgrades expose a remove action")
+	if remove_modification != null:
+		var removal_messages: Array[String] = []
+		modified_editor.connect("inventory_changed", func(message: String) -> void: removal_messages.append(message))
+		remove_modification.pressed.emit()
+		_assert_true("red_dot_laser_sight" not in ((_owned_item(prepared_state, m36_instance_id).get("modification_ids", []) as Array)), "remove action mutates only the selected owned weapon")
+		_assert_true(not removal_messages.is_empty(), "remove action emits an inventory refresh")
+	_assert_interactive_controls_fit_width(modified_editor, 960.0)
+	modified_editor.queue_free()
 	await process_frame
 
 	var unprepared_state := CharacterState.new()
@@ -292,6 +362,8 @@ func _run() -> void:
 	_assert_true(_find_named(creation_editor, "CreationOptionalEquipment") != null, "creation mode exposes Add Optional Equipment")
 	_assert_true(_find_named(creation_editor, "CreationReviewFinalize") != null, "creation mode exposes Review and Finalize")
 	_assert_true(_find_named(creation_editor, "CraftsmanshipSelector") == null, "creation mode hides craftsmanship administration")
+	_assert_true(_find_named(creation_editor, "CatalogueCraftsmanshipSelector") == null, "creation optional additions do not expose craftsmanship selection")
+	_assert_true(_find_named(creation_editor, "WeaponModificationPanel") == null, "creation mode hides weapon modification administration")
 	_assert_true(_find_named(creation_editor, "OriginSelector") == null, "creation mode hides provenance administration")
 	_assert_true(_find_named(creation_editor, "OwnedCustodianFilter") == null, "creation mode hides custody administration")
 	_assert_true(_find_named(creation_editor, "StartingGrantReconciliation") == null, "creation mode hides reconciliation values")
@@ -441,6 +513,41 @@ func _find_named(node: Node, node_name: String) -> Node:
 		if nested != null:
 			return nested
 	return null
+
+
+func _find_item_card(node: Node, item_name: String) -> PanelContainer:
+	if node == null:
+		return null
+	if node is PanelContainer and _find_text_contains(node, item_name) != null:
+		return node as PanelContainer
+	for child in node.get_children():
+		var nested := _find_item_card(child, item_name)
+		if nested != null:
+			return nested
+	return null
+
+
+func _find_metadata_index(selector: OptionButton, metadata: Variant) -> int:
+	if selector == null:
+		return -1
+	for index in selector.item_count:
+		if selector.get_item_metadata(index) == metadata:
+			return index
+	return -1
+
+
+func _select_metadata(selector: OptionButton, metadata: Variant) -> void:
+	var index := _find_metadata_index(selector, metadata)
+	if index >= 0:
+		selector.select(index)
+		selector.item_selected.emit(index)
+
+
+func _owned_item(character_state: CharacterState, instance_id: String) -> Dictionary:
+	for item: Dictionary in character_state.owned_items:
+		if str(item.get("instance_id", "")) == instance_id:
+			return item
+	return {}
 
 
 func _assert_interactive_controls_fit_width(node: Node, viewport_width: float) -> void:
